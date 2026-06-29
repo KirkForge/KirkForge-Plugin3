@@ -938,9 +938,8 @@ fn adr_0011_no_finding_or_findingkind_in_source() {
     for dir in [&core_src, &cli_src, &hosts_src] {
         let mut stack = vec![dir.clone()];
         while let Some(d) = stack.pop() {
-            let entries = match std::fs::read_dir(&d) {
-                Ok(e) => e,
-                Err(_) => continue,
+            let Ok(entries) = std::fs::read_dir(&d) else {
+                continue;
             };
             for entry in entries.flatten() {
                 let p = entry.path();
@@ -1041,9 +1040,8 @@ fn adr_0012_no_prewarm_cache_or_priming_hint_in_source() {
     for dir in [&core_src, &cli_src, &hosts_src] {
         let mut stack = vec![dir.clone()];
         while let Some(d) = stack.pop() {
-            let entries = match std::fs::read_dir(&d) {
-                Ok(e) => e,
-                Err(_) => continue,
+            let Ok(entries) = std::fs::read_dir(&d) else {
+                continue;
             };
             for entry in entries.flatten() {
                 let p = entry.path();
