@@ -1,4 +1,4 @@
-//! SlicingTransform — head/tail preservation with offloaded middle.
+//! `SlicingTransform` — head/tail preservation with offloaded middle.
 //! Per ADR-0003.
 
 use crate::error::TransformError;

@@ -1,4 +1,4 @@
-//! Compaction — CompactHint payload + LocalSummaryCompactor transform.
+//! Compaction — `CompactHint` payload + `LocalSummaryCompactor` transform.
 //! Per ADR-0008.
 
 use serde::{Deserialize, Serialize};
@@ -23,6 +23,7 @@ pub struct Turn {
     pub content_preview: String,
 }
 
+#[must_use]
 pub fn build_hint(budget: &TokenBudget, history: &[Turn]) -> CompactHint {
     CompactHint {
         reason: format!(
@@ -51,6 +52,7 @@ pub trait CompactionTransform: Send + Sync {
 
 /// Heuristic line filter — keeps the first non-empty short line of each
 /// "paragraph", drops noisy long lines. ADR-0008: intentional crudeness.
+#[must_use]
 pub fn local_summarise(input: &str, max_bytes: usize) -> String {
     let mut out = String::new();
     for line in input.lines() {

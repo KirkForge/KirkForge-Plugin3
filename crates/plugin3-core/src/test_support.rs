@@ -55,7 +55,7 @@ impl ReentrantMutex {
         let mut state = self
             .state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if state.holder == Some(current) {
             // Same thread already holds the lock; just recurse.
             state.depth += 1;
@@ -69,11 +69,11 @@ impl ReentrantMutex {
         let guard = self
             .mutex
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state = self
             .state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.holder = Some(current);
         state.depth = 1;
         ReentrantMutexGuard {
@@ -94,7 +94,7 @@ impl Drop for ReentrantMutexGuard<'_> {
             .mutex
             .state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if state.depth > 1 {
             state.depth -= 1;
             return;

@@ -2,7 +2,7 @@
 //!
 //! ponytail: a single `TransformError` covers both the slicing
 //! pipeline (which can `Skipped` pass-throughs) and the compaction
-//! pipeline (which only has InvalidInput / Internal). Two
+//! pipeline (which only has `InvalidInput` / Internal). Two
 //! near-identical enums in sibling modules invited drift; one
 //! definition keeps the trait contracts aligned.
 

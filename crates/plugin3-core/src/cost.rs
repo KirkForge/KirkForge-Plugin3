@@ -58,6 +58,7 @@ fn usage_path() -> PathBuf {
 // that ships silently because the Allow arm is exercised in
 // production on every healthy session). Returning Option makes
 // the skip an explicit caller choice.
+#[must_use]
 pub fn classify_kind(intervention: &Intervention) -> Option<UsageKind> {
     match intervention {
         Intervention::Allow => None,
@@ -74,6 +75,7 @@ pub fn classify_kind(intervention: &Intervention) -> Option<UsageKind> {
 // per tool result) and the config file is small (~50 bytes).
 // Caching is premature. Path-parameterised so tests can point
 // at a tempdir without touching the user's XDG config.
+#[must_use]
 pub fn is_usage_enabled_at(cfg_path: &std::path::Path) -> bool {
     // ponytail: missing *and* malformed config both default to
     // enabled — don't punish the user for a typo or an absent file.

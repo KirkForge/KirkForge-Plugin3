@@ -21,7 +21,7 @@ pub struct SessionTotals {
 }
 
 /// Group surviving records by `session_id` and roll up the counts.
-/// ADR-0010: `--summary` emits one line per session. BTreeMap
+/// ADR-0010: `--summary` emits one line per session. `BTreeMap`
 /// keeps session order stable so the output is deterministic
 /// for tests.
 ///
@@ -30,9 +30,10 @@ pub struct SessionTotals {
 /// usage.jsonl may be hand-edited; a contributor who propagates
 /// with `?` breaks a long session summary at the first typo.
 /// ponytail: typed `UsageRecord` parse so `kind` strings ("slice",
-/// "budget_warn", …) come from `UsageKind` instead of being
+/// "`budget_warn`", …) come from `UsageKind` instead of being
 /// duplicated here. A kind rename surfaces at compile time, not
 /// as silently-dropped records.
+#[must_use]
 pub fn aggregate_sessions(lines: &[&str]) -> BTreeMap<String, SessionTotals> {
     let mut out: BTreeMap<String, SessionTotals> = BTreeMap::new();
     for line in lines {
@@ -66,6 +67,7 @@ pub fn aggregate_sessions(lines: &[&str]) -> BTreeMap<String, SessionTotals> {
 /// ponytail: typed `UsageRecord` parse so `session_id`/`kind`
 /// field renames fail at compile time instead of silently
 /// dropping records. Mirrors the strategy in `aggregate_sessions`.
+#[must_use]
 pub fn filter_lines<'a>(
     lines: &'a [&'a str],
     session: Option<&str>,
@@ -95,6 +97,7 @@ pub fn filter_lines<'a>(
 
 /// Truncate a filtered slice to its last `n` entries; if `n`
 /// exceeds the slice length, return the slice unchanged.
+#[must_use]
 pub fn tail_lines<'a>(lines: &'a [&'a str], n: usize) -> &'a [&'a str] {
     if lines.len() > n {
         &lines[lines.len() - n..]
@@ -116,6 +119,7 @@ pub fn tail_lines<'a>(lines: &'a [&'a str], n: usize) -> &'a [&'a str] {
 /// additive commit (round 11) that explicitly extended the
 /// documented shape — keeping the original four fields first
 /// preserves the original grep affordances.
+#[must_use]
 pub fn format_summary_line(sid: &str, totals: &SessionTotals) -> String {
     format!(
         "session {sid}  bytes_saved={}  warnings={}  compactions={}  records={}",

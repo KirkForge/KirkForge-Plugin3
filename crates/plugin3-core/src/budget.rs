@@ -1,4 +1,4 @@
-//! TokenBudget — three-state guard with auto-intervention.
+//! `TokenBudget` — three-state guard with auto-intervention.
 //! Per ADR-0005.
 
 use serde::{Deserialize, Serialize};
@@ -83,6 +83,7 @@ impl Default for UsageConfig {
 }
 
 impl TokenBudget {
+    #[must_use]
     pub fn state(&self) -> BudgetState {
         if self.ceiling == 0 {
             return BudgetState::Over;
@@ -97,6 +98,7 @@ impl TokenBudget {
         }
     }
 
+    #[must_use]
     pub fn can_send(&self, incoming: usize) -> bool {
         self.used.saturating_add(incoming) <= self.ceiling
     }
@@ -104,6 +106,7 @@ impl TokenBudget {
     pub fn record(&mut self, n: usize) {
         self.used = self.used.saturating_add(n);
     }
+    #[must_use]
     pub fn remaining(&self) -> usize {
         self.ceiling.saturating_sub(self.used)
     }
@@ -140,6 +143,7 @@ pub enum Intervention {
     },
 }
 
+#[must_use]
 pub fn decide(budget: &TokenBudget, incoming: usize, recent: &[(String, usize)]) -> Intervention {
     if budget.can_send(incoming) {
         return match budget.state() {
@@ -172,6 +176,7 @@ pub fn decide(budget: &TokenBudget, incoming: usize, recent: &[(String, usize)])
 }
 
 /// Heuristic token estimator — ADR-0005. Conservative.
+#[must_use]
 pub fn estimate_tokens(s: &str) -> usize {
     let bytes = s.len();
     let trimmed = s.trim_start();

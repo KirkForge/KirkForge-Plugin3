@@ -1,4 +1,4 @@
-//! OffloadStore — content-addressed key/value store for the middle of
+//! `OffloadStore` — content-addressed key/value store for the middle of
 //! sliced tool outputs. Per ADR-0004. Two backends: in-memory and file.
 
 use std::collections::HashMap;
@@ -29,6 +29,7 @@ pub trait OffloadStore: Send + Sync {
 }
 
 /// 24 hex chars (96 bits) — ADR-0004. Byte-compatible with Stratum.
+#[must_use]
 pub fn make_key(bytes: &[u8]) -> String {
     let hash = blake3::hash(bytes);
     let hex = hash.to_hex();
@@ -42,10 +43,12 @@ pub fn validate_key(key: &str) -> Result<(), StoreError> {
     Ok(())
 }
 
+#[must_use]
 pub fn format_slice_marker(key: &str) -> String {
     format!("{SLICE_MARKER_PREFIX}{key}{SLICE_MARKER_SUFFIX}")
 }
 
+#[must_use]
 pub fn parse_slice_marker(s: &str) -> Option<&str> {
     s.strip_prefix(SLICE_MARKER_PREFIX)?
         .strip_suffix(SLICE_MARKER_SUFFIX)
@@ -64,6 +67,7 @@ impl Default for InMemoryOffloadStore {
 }
 
 impl InMemoryOffloadStore {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             map: Mutex::new(HashMap::new()),
@@ -143,7 +147,7 @@ impl OffloadStore for FileOffloadStore {
             return 0;
         };
         entries
-            .filter_map(|e| e.ok())
+            .filter_map(std::result::Result::ok)
             .filter(|e| {
                 e.file_name()
                     .to_str()
