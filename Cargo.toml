@@ -1,0 +1,56 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/plugin3-core",
+    "crates/plugin3-hosts",
+    "crates/plugin3-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+# ponytail: MSRV matches rust-toolchain.toml (ADR-0017). Bump
+# the toolchain pin in lockstep with this line.
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+# ponytail: repository/authors are absent — fill in when the public
+# repo is created. ADR-0002 § Workspace Cargo.toml lists them.
+# repository = "https://github.com/kirkforge/plugin3"
+# authors = ["KirkForge"]
+
+[workspace.dependencies]
+plugin3-core = { path = "crates/plugin3-core", version = "0.1.0" }
+plugin3-hosts = { path = "crates/plugin3-hosts", version = "0.1.0" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+clap = { version = "4", features = ["derive", "env"] }
+thiserror = "1"
+directories = "5"
+tempfile = "3"
+chrono = { version = "0.4", features = ["serde"] }
+blake3 = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+debug = false
+panic = "abort"
+
+[profile.dev]
+opt-level = 0
+debug = true
+incremental = true
+
+# ponytail: CI profile (ADR-0017 § Reproducible builds).
+# `incremental = false` pairs with `CARGO_INCREMENTAL=0` so the
+# build is byte-for-byte reproducible across runs. `line-tables-only`
+# debug info keeps stack traces readable while shedding the bulk of
+# the per-line variable info that bloats the CI artefact.
+[profile.ci]
+inherits = "dev"
+debug = "line-tables-only"
+incremental = false

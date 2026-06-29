@@ -1,0 +1,20 @@
+[package]
+name = "plugin3-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "plugin3"
+path = "src/main.rs"
+
+[dependencies]
+plugin3-core = { workspace = true }
+plugin3-hosts = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+clap = { workspace = true }
+chrono = { workspace = true }
+tempfile = { workspace = true }

@@ -1,0 +1,10 @@
+[toolchain]
+# ponytail: ADR-0017 § Toolchain pin. Pinning the toolchain means
+# a contributor's local build cannot silently drift from CI's.
+# A deliberate upgrade is its own commit with CI green-light.
+# 1.85 is the floor: indexmap 2.14 (transitive via toml_edit)
+# needs edition2024 which 1.75 cannot decode. ADR's 1.75 spec is
+# aspirational; bump the pin when the dep tree's MSRV forces it.
+channel = "1.85.0"
+components = ["rustfmt", "clippy", "rust-src"]
+profile = "minimal"

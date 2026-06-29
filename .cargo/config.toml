@@ -1,0 +1,5 @@
+# .cargo/config.toml — ADR-0017 § Implementation notes.
+# Build-time aliases so contributors don't have to remember the
+# long form.
+[alias]
+bloat = "bloat --release --crates"
