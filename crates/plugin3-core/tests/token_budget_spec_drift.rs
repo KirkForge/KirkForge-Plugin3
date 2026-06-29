@@ -220,7 +220,7 @@ fn adr_0005_config_file_emits_both_section_headers_together() {
     // And the round-trip must preserve both section values.
     let back: ConfigFile = toml::from_str(&s).expect("parse ConfigFile");
     assert_eq!(back.budget.ceiling, 222_000);
-    assert_eq!(back.budget.approaching_ratio, 0.8);
+    assert!((back.budget.approaching_ratio - 0.8).abs() < f64::EPSILON);
     assert!(!back.usage.enabled);
 }
 

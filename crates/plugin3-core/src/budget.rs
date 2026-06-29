@@ -531,9 +531,11 @@ mod tests {
             BudgetConfig::default().ceiling,
             TokenBudget::default().ceiling,
         );
-        assert_eq!(
-            BudgetConfig::default().approaching_ratio,
-            TokenBudget::default().approaching_ratio,
+        assert!(
+            (BudgetConfig::default().approaching_ratio - TokenBudget::default().approaching_ratio)
+                .abs()
+                < f64::EPSILON,
+            "BudgetConfig and TokenBudget default approaching_ratio must match"
         );
     }
 
