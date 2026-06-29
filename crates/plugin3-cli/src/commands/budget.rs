@@ -763,13 +763,14 @@ mod compact_tests {
     // pass the in-memory test (the assertion there happens before
     // the file write) but break this one.
     //
-    // Skip-if-conflict: if the developer's shell has
-    // PLUGIN3_DATA_DIR set, we can't tell "test override" from
+    // Skip-if-conflict: if the developer's shell has PLUGIN3_DATA_DIR
+    // or PLUGIN3_RUNTIME_DIR set, we can't tell "test override" from
     // "shell override" — mirror the paths.rs pattern and bail.
     #[test]
     fn reset_persists_zeroed_used_to_disk() {
-        if std::env::var("PLUGIN3_DATA_DIR").is_ok() {
-            eprintln!("skipping: PLUGIN3_DATA_DIR already set in this environment");
+        if std::env::var("PLUGIN3_DATA_DIR").is_ok() || std::env::var("PLUGIN3_RUNTIME_DIR").is_ok()
+        {
+            eprintln!("skipping: PLUGIN3_*_DIR already set in this environment");
             return;
         }
         // ponytail: env-var guard lives in `plugin3_core::test_support`
@@ -780,7 +781,11 @@ mod compact_tests {
 
         let dir = tempfile::tempdir().expect("tempdir");
         let dir_str = dir.path().to_str().expect("utf8 path");
-        let _g = EnvGuard::set("PLUGIN3_DATA_DIR", dir_str);
+        // B2: budget.toml is under runtime_dir. Keep data_dir and
+        // runtime_dir pointing at the same tempdir so the test
+        // touches only the tempdir, not the host's real XDG dirs.
+        let _g_data = EnvGuard::set("PLUGIN3_DATA_DIR", dir_str);
+        let _g_run = EnvGuard::set("PLUGIN3_RUNTIME_DIR", dir_str);
 
         // Seed: write a budget.toml that simulates yesterday's
         // session-end state (used: 12345, ceiling: 250000).
@@ -822,8 +827,8 @@ mod compact_tests {
             post.approaching_ratio
         );
 
-        // Drop order: _g first (restores env), then dir (removes
-        // tempdir). Both run at function end; the binding order
-        // determines order. dir is declared first so it drops last.
+        // Drop order: _g_run / _g_data first (restore env), then
+        // dir (removes tempdir). Both run at function end; the binding
+        // order determines order. dir is declared first so it drops last.
     }
 }

@@ -1223,14 +1223,14 @@ mod tests {
         //
         // The `run_hook_subprocess` helper sets `PLUGIN3_*_DIR`
         // to fresh tempdirs, which means `load_budget` reads
-        // the seeded budget.toml from `data_dir/budget.toml` and
+        // the seeded budget.toml from `runtime_dir/budget.toml` and
         // `save_budget` writes back to the same path. The pin
         // tolerates the post-decide save (the next test gets a
         // tempdir of its own).
         let cfg_dir = tempfile::tempdir().expect("cfg tempdir");
         let data_dir = tempfile::tempdir().expect("data tempdir");
         let runtime_dir = tempfile::tempdir().expect("runtime tempdir");
-        let budget_path = data_dir.path().join("budget.toml");
+        let budget_path = runtime_dir.path().join("budget.toml");
         let seed = TokenBudget {
             ceiling: 100,
             approaching_ratio: 0.8,
@@ -1339,7 +1339,7 @@ mod tests {
         let cfg_dir = tempfile::tempdir().expect("cfg tempdir");
         let data_dir = tempfile::tempdir().expect("data tempdir");
         let runtime_dir = tempfile::tempdir().expect("runtime tempdir");
-        let budget_path = data_dir.path().join("budget.toml");
+        let budget_path = runtime_dir.path().join("budget.toml");
         let recent_path = data_dir.path().join("recent_outputs.jsonl");
         std::fs::write(
             &budget_path,
@@ -1456,7 +1456,7 @@ mod tests {
         let cfg_dir = tempfile::tempdir().expect("cfg tempdir");
         let data_dir = tempfile::tempdir().expect("data tempdir");
         let runtime_dir = tempfile::tempdir().expect("runtime tempdir");
-        let budget_path = data_dir.path().join("budget.toml");
+        let budget_path = runtime_dir.path().join("budget.toml");
         std::fs::write(
             &budget_path,
             toml::to_string(&TokenBudget {
@@ -1966,8 +1966,9 @@ mod tests {
         // Session 1: write 222_000 as default.
         let (_out, cfg_dir, _data_dir, _runtime_dir) = run_budget_set_subprocess(222_000, true);
         // Session 2: fresh runtime dir; load_budget_with_config must
-        // overlay the persisted default even though runtime is empty.
-        let runtime_path = cfg_dir.path().join("data-fresh/budget.toml");
+        // overlay the persisted default even though runtime budget.toml
+        // is empty.
+        let runtime_path = cfg_dir.path().join("runtime-fresh/budget.toml");
         std::fs::create_dir_all(runtime_path.parent().unwrap()).unwrap();
         let cfg_path = cfg_dir.path().join("config.toml");
         let b = load_budget_with_config(&runtime_path, &cfg_path);
@@ -2135,6 +2136,8 @@ mod validate_tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let p = fake_paths_in(dir.path());
         std::fs::create_dir_all(p.data_dir.join("logs")).unwrap();
+        // B2: budget.toml lives in runtime_dir; create it before seeding.
+        std::fs::create_dir_all(&p.runtime_dir).unwrap();
         std::fs::write(p.budget_file(), b"").unwrap();
         let checks = commands::config::run_path_checks_for(&p);
         let budget_check = checks
@@ -2208,11 +2211,11 @@ mod adr_0015_validate_tests {
     // the binary once. run_cli_subprocess returns the tempdir guard
     // so we can mutate a file between env-var copy and child exec.
     // `dir` is the tempdir to write into ("config" → cfg_dir,
-    // "data" → data_dir); `filename` is the on-disk name relative
-    // to that dir. Both corrupt-config and corrupt-budget paths
+    // "data" → data_dir, "runtime" → runtime_dir); `filename` is the
+    // on-disk name relative to that dir. All three corrupt-* paths
     // share this helper so a contributor who breaks one surface
     // (e.g. drops `parse_budget_at` from `run_path_checks`) is
-    // caught by both tests.
+    // caught by the other tests.
     fn run_cli_subprocess_with_corrupt_file(
         args: &[&str],
         body: &[u8],
@@ -2225,6 +2228,7 @@ mod adr_0015_validate_tests {
         let target = match dir {
             "config" => cfg_dir.path().join(filename),
             "data" => data_dir.path().join(filename),
+            "runtime" => runtime_dir.path().join(filename),
             other => panic!("unknown dir slot: {other}"),
         };
         std::fs::write(&target, body).unwrap();
@@ -2306,7 +2310,7 @@ mod adr_0015_validate_tests {
             //   ratio >= 1.0                    → Over
             //   ratio >= self.approaching_ratio → Approaching
             //   else                            → Under
-            let budget_path = data_dir.path().join("budget.toml");
+            let budget_path = runtime_dir.path().join("budget.toml");
             let seed = TokenBudget {
                 ceiling,
                 approaching_ratio: 0.8,
@@ -6041,8 +6045,8 @@ mod adr_0015_validate_tests {
         // breaks every `jq '.state == "approaching"'` filter
         // silently. Drift catches here.
         //
-        // budget.toml is `data_dir/budget.toml` (ADR-0014); the
-        // runtime loader at `load_budget_with_config` parses it
+        // budget.toml is `runtime_dir/budget.toml` (ADR-0014 § B2);
+        // the runtime loader at `load_budget_with_config` parses it
         // via `toml::from_str::<TokenBudget>`. Two seeded values
         // cover the two interesting ratios:
         //   ceiling=100, used=80  → ratio=0.80 ≥ approaching_ratio
@@ -6063,7 +6067,7 @@ mod adr_0015_validate_tests {
             // when config.toml is absent. The seeded `used`
             // value crosses the threshold for the expected
             // state.
-            let budget_path = data_dir.path().join("budget.toml");
+            let budget_path = runtime_dir.path().join("budget.toml");
             let seed = TokenBudget {
                 ceiling: 100,
                 approaching_ratio: 0.8,
@@ -6134,7 +6138,7 @@ mod adr_0015_validate_tests {
         let (out, _cfg) = run_cli_subprocess_with_corrupt_file(
             &["config", "--validate"],
             b"this is = not [ valid",
-            "data",
+            "runtime",
             "budget.toml",
         );
         assert!(
@@ -6937,7 +6941,7 @@ mod adr_0015_validate_tests {
         let cfg_dir = tempfile::tempdir().expect("cfg tempdir");
         let data_dir = tempfile::tempdir().expect("data tempdir");
         let runtime_dir = tempfile::tempdir().expect("runtime tempdir");
-        let budget_path = data_dir.path().join("budget.toml");
+        let budget_path = runtime_dir.path().join("budget.toml");
         let recent_path = data_dir.path().join("recent_outputs.jsonl");
         std::fs::write(
             &budget_path,
@@ -7127,7 +7131,7 @@ mod adr_0015_validate_tests {
             // `session at {used}/{ceiling} tokens; compaction suggested`,
             // so seeded values yield `session at 42/100 tokens;
             // compaction suggested` — pinned verbatim below.
-            let budget_path = data_dir.path().join("budget.toml");
+            let budget_path = runtime_dir.path().join("budget.toml");
             let seed = TokenBudget {
                 ceiling: 100,
                 approaching_ratio: 0.8,

@@ -137,15 +137,17 @@ fn adr_0014_implementation_notes_section() -> String {
 #[test]
 fn adr_0014_directory_layout_block_does_not_claim_phantom_entries() {
     let block = adr_0014_directory_layout_block();
-    for phantom in ["slices.sqlite", "anchors", "$XDG_RUNTIME_DIR", "runtime"] {
+    // B2: budget.toml now lives under $XDG_RUNTIME_DIR/plugin3/, so
+    // `runtime` / `$XDG_RUNTIME_DIR` are legitimate layout references.
+    for phantom in ["slices.sqlite", "anchors"] {
         assert!(
             !block.contains(phantom),
             "ADR-0014 § Directory layout example block claims `{phantom}` \
              but the impl does not produce this file. Adding a SQLite \
-             OffloadStore / anchors dir / runtime lock is a future ADR; \
-             until then the directory layout is what § Path resolution's \
-             `Paths` struct exposes. If you are re-introducing one of \
-             these, update both the ADR and `Paths` in lockstep.",
+             OffloadStore / anchors dir is a future ADR; until then the \
+             directory layout is what § Path resolution's `Paths` struct \
+             exposes. If you are re-introducing one of these, update both \
+             the ADR and `Paths` in lockstep.",
         );
     }
 }
@@ -165,6 +167,9 @@ fn adr_0014_directory_layout_block_lists_actual_artifacts() {
         "recent_outputs.jsonl",
         "usage.jsonl",
         "config.toml",
+        // B2: budget.toml moved to runtime_dir, so the layout block
+        // must show the runtime directory.
+        "$XDG_RUNTIME_DIR",
     ] {
         assert!(
             block.contains(artifact),

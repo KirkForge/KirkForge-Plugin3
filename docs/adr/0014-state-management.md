@@ -33,10 +33,12 @@ $XDG_CONFIG_HOME/plugin3/
 $XDG_DATA_HOME/plugin3/
 ├── slices/                  # OffloadStore (FileOffloadStore, per ADR-0004)
 │   └── <24-hex-key>         # one file per slice
-├── budget.toml              # budget state
 ├── recent_outputs.jsonl     # recent tool outputs (bounded)
 └── logs/
     └── usage.jsonl          # cost reporting (ADR-0010)
+
+$XDG_RUNTIME_DIR/plugin3/
+└── budget.toml              # session-local budget state (used counter)
 ```
 
 ponytail: the earlier draft listed `slices.sqlite` (a
@@ -56,10 +58,16 @@ today:
 - The `lock` file in runtime_dir is unused — see § Runtime
   lock below for the Ponytail rationale.
 
+B2 update: `budget.toml` moved from `$XDG_DATA_HOME/plugin3/`
+to `$XDG_RUNTIME_DIR/plugin3/` so the `used` counter is
+session-local. `config.toml` continues to persist the user's
+`ceiling`/`approaching_ratio` defaults (ADR-0005).
+
 The drift test
 `tests/state_spec_drift.rs::adr_0014_directory_layout_block`
-pins the absence of `slices.sqlite`, `anchors/`, and
-`lock` in the § Directory layout block.
+pins the absence of `slices.sqlite`, `anchors/`, and `lock`
+in the § Directory layout block and the presence of
+`$XDG_RUNTIME_DIR` for `budget.toml`.
 
 ### Path resolution
 

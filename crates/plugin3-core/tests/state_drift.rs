@@ -42,8 +42,8 @@ fn derived_paths_match_adr_directory_layout() {
     }
 
     let p = Paths::resolve();
-    // budget.toml lives in data_dir (ADR-0014).
-    assert_eq!(p.budget_file(), p.data_dir.join("budget.toml"));
+    // budget.toml lives in runtime_dir (ADR-0014 § B2 — session-local).
+    assert_eq!(p.budget_file(), p.runtime_dir.join("budget.toml"));
     // usage.jsonl lives under data_dir/logs/.
     assert_eq!(p.usage_log(), p.data_dir.join("logs").join("usage.jsonl"));
     // recent_outputs.jsonl lives in data_dir.
@@ -85,7 +85,7 @@ fn env_overrides_take_precedence_over_xdg_defaults() {
     assert_eq!(p.data_dir, PathBuf::from("/tmp/p3-data"));
     assert_eq!(p.runtime_dir, PathBuf::from("/tmp/p3-run"));
     // Derived paths also follow the override.
-    assert_eq!(p.budget_file(), PathBuf::from("/tmp/p3-data/budget.toml"));
+    assert_eq!(p.budget_file(), PathBuf::from("/tmp/p3-run/budget.toml"));
 }
 
 #[test]
@@ -101,7 +101,7 @@ fn atomic_write_then_read_round_trips_real_paths_struct() {
         data_dir: dir.path().join("data"),
         runtime_dir: dir.path().join("run"),
     };
-    // budget.toml under data_dir, nested like a real XDG layout.
+    // budget.toml under runtime_dir, nested like a real XDG layout.
     let budget_path = paths.budget_file();
 
     // Round-trip a real TokenBudget shape (ADR-0005).
@@ -113,5 +113,5 @@ fn atomic_write_then_read_round_trips_real_paths_struct() {
     assert_eq!(read_back, body, "round-trip body mismatch");
 
     // Parent dir was created (atomic_write_text creates nested dirs).
-    assert!(paths.data_dir.is_dir(), "data_dir not created");
+    assert!(paths.runtime_dir.is_dir(), "runtime_dir not created");
 }

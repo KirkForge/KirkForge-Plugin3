@@ -30,7 +30,11 @@ impl Paths {
     // Derived paths (ADR-0014 § directory layout). One source of truth
     // so the CLI and `cost::usage_path` stop computing them inline.
     pub fn budget_file(&self) -> PathBuf {
-        self.data_dir.join("budget.toml")
+        // ponytail: B2 fix — `used` is session-local. Keep budget.toml in
+        // runtime_dir so yesterday's session counter does not bleed into
+        // today's first hook invocation. `ceiling`/`approaching_ratio`
+        // defaults persist in config.toml (ADR-0005) and overlay at load.
+        self.runtime_dir.join("budget.toml")
     }
     pub fn slices_dir(&self) -> PathBuf {
         self.data_dir.join("slices")
@@ -145,7 +149,9 @@ mod tests {
         );
         drop(_g1);
 
-        // 2) Only DATA_DIR set. Derived paths must track the override.
+        // 2) Only DATA_DIR set. Derived data paths must track the
+        // override; budget_file does NOT (it is session-local under
+        // runtime_dir per B2).
         let _g2 = EnvGuard::set("PLUGIN3_DATA_DIR", "/tmp/data-only");
         let p2 = Paths::resolve();
         assert_eq!(
@@ -153,14 +159,7 @@ mod tests {
             PathBuf::from("/tmp/data-only"),
             "PLUGIN3_DATA_DIR alone must override data_dir"
         );
-        // budget_file, slices_dir, usage_log, and recent_outputs all
-        // sit under data_dir — pin them so a contributor who hardcodes
-        // one to a fixed XDG-derived path surfaces here (silently
-        // shadowing the env override would otherwise pass).
-        assert_eq!(
-            p2.budget_file(),
-            PathBuf::from("/tmp/data-only/budget.toml")
-        );
+        // slices_dir, usage_log, and recent_outputs sit under data_dir.
         assert_eq!(p2.slices_dir(), PathBuf::from("/tmp/data-only/slices"));
         assert_eq!(
             p2.usage_log(),
@@ -170,6 +169,14 @@ mod tests {
             p2.recent_outputs(),
             PathBuf::from("/tmp/data-only/recent_outputs.jsonl")
         );
+        // budget_file is runtime-local; with DATA_DIR overridden but
+        // RUNTIME_DIR unset, it must come from the XDG default runtime
+        // dir, NOT from /tmp/data-only.
+        assert_ne!(
+            p2.budget_file(),
+            PathBuf::from("/tmp/data-only/budget.toml"),
+            "budget.toml must NOT follow the data_dir override; it lives in runtime_dir"
+        );
         assert_ne!(
             p2.config_dir,
             PathBuf::from("/tmp/data-only"),
@@ -177,13 +184,19 @@ mod tests {
         );
         drop(_g2);
 
-        // 3) Only RUNTIME_DIR set.
+        // 3) Only RUNTIME_DIR set. Derived runtime paths (budget_file)
+        // must track the override.
         let _g3 = EnvGuard::set("PLUGIN3_RUNTIME_DIR", "/tmp/run-only");
         let p3 = Paths::resolve();
         assert_eq!(
             p3.runtime_dir,
             PathBuf::from("/tmp/run-only"),
             "PLUGIN3_RUNTIME_DIR alone must override runtime_dir"
+        );
+        assert_eq!(
+            p3.budget_file(),
+            PathBuf::from("/tmp/run-only/budget.toml"),
+            "budget.toml must follow the runtime_dir override"
         );
         assert_ne!(
             p3.data_dir,
@@ -209,7 +222,7 @@ mod tests {
     // `ReentrantMutex` implementation and the B8 fix note.
 
     #[test]
-    fn derived_paths_match_data_dir_layout() {
+    fn derived_paths_match_adr_directory_layout() {
         // ponytail: one source of truth for the on-disk layout
         // (ADR-0014). If a future contributor renames a file or moves
         // it, the test surfaces the change.
@@ -218,7 +231,8 @@ mod tests {
             data_dir: PathBuf::from("/d"),
             runtime_dir: PathBuf::from("/r"),
         };
-        assert_eq!(p.budget_file(), PathBuf::from("/d/budget.toml"));
+        // B2: budget.toml is session-local, so it lives in runtime_dir.
+        assert_eq!(p.budget_file(), PathBuf::from("/r/budget.toml"));
         assert_eq!(p.slices_dir(), PathBuf::from("/d/slices"));
         assert_eq!(p.usage_log(), PathBuf::from("/d/logs/usage.jsonl"));
         assert_eq!(p.recent_outputs(), PathBuf::from("/d/recent_outputs.jsonl"));
