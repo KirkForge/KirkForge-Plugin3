@@ -491,7 +491,7 @@ mod drift_tests {
         let v = serde_json::to_value(&cfg).unwrap();
         let obj = v.as_object().expect("HookConfig serialises to object");
         let mut keys: Vec<&str> = obj.keys().map(String::as_str).collect();
-        keys.sort();
+        keys.sort_unstable();
         assert_eq!(keys, vec!["PostToolUse", "PreCompact", "UserPromptSubmit"]);
     }
 }

@@ -474,7 +474,7 @@ mod compact_tests {
         // produces the same set.
         let obj = v.as_object().expect("top-level is an object");
         let mut top_keys: Vec<&str> = obj.keys().map(String::as_str).collect();
-        top_keys.sort();
+        top_keys.sort_unstable();
         assert_eq!(
             top_keys,
             vec!["hint"],
@@ -495,7 +495,7 @@ mod compact_tests {
             .as_object()
             .expect("hint is an object (CompactHint is a struct)");
         let mut hint_keys: Vec<&str> = hint_obj.keys().map(String::as_str).collect();
-        hint_keys.sort();
+        hint_keys.sort_unstable();
         assert_eq!(
             hint_keys,
             vec![
@@ -608,7 +608,7 @@ mod compact_tests {
             // by inflating the key set.
             let obj = v.as_object().expect("top-level is an object");
             let mut top_keys: Vec<&str> = obj.keys().map(String::as_str).collect();
-            top_keys.sort();
+            top_keys.sort_unstable();
             assert_eq!(
                 top_keys,
                 vec!["ceiling", "state", "used"],
@@ -732,7 +732,7 @@ mod compact_tests {
 
         let obj = v.as_object().expect("top-level is an object");
         let mut top_keys: Vec<&str> = obj.keys().map(String::as_str).collect();
-        top_keys.sort();
+        top_keys.sort_unstable();
         assert_eq!(
             top_keys,
             vec!["ceiling", "prior_used", "used"],
