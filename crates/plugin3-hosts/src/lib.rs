@@ -29,6 +29,7 @@ pub enum Host {
     Aider,
 }
 
+#[must_use]
 pub fn detect_host() -> Host {
     // ponytail: production entry point — wraps the pure function
     // below so the host shim layer reads `std::env::var` exactly

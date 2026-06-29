@@ -88,6 +88,10 @@ impl TokenBudget {
         if self.ceiling == 0 {
             return BudgetState::Over;
         }
+        // ponytail: used/ceiling are token counts; exceeding f64's 53-bit
+        // mantissa requires >4.5e15 tokens, far outside any realistic MVP
+        // session. The cast is safe for all practical ceilings.
+        #[allow(clippy::cast_precision_loss)]
         let ratio = self.used as f64 / self.ceiling as f64;
         if ratio >= 1.0 {
             BudgetState::Over
