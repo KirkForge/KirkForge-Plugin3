@@ -84,8 +84,7 @@ pub(crate) fn merge_into_settings(
                 let is_ours = entry
                     .get("command")
                     .and_then(|c| c.as_str())
-                    .map(|c| c.starts_with("plugin3 "))
-                    .unwrap_or(false);
+                    .is_some_and(|c| c.starts_with("plugin3 "));
                 if !is_ours {
                     preserved_foreign = true;
                     merged_array.push(entry.clone());
@@ -99,8 +98,7 @@ pub(crate) fn merge_into_settings(
                         .and_then(|arr| arr.first())
                         .and_then(|e| e.get("command"))
                         .and_then(|c| c.as_str())
-                        .map(|c| Some(c) == entry.get("command").and_then(|x| x.as_str()))
-                        .unwrap_or(false);
+                        .is_some_and(|c| Some(c) == entry.get("command").and_then(|x| x.as_str()));
                     if !same_cmd {
                         let existing_cmd = entry.get("command").cloned().unwrap_or(Value::Null);
                         conflict = Some((slot.to_string(), existing_cmd));

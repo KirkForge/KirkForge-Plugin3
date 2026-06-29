@@ -147,8 +147,7 @@ impl OffloadStore for FileOffloadStore {
             .filter(|e| {
                 e.file_name()
                     .to_str()
-                    .map(|n| validate_key(n).is_ok())
-                    .unwrap_or(false)
+                    .is_some_and(|n| validate_key(n).is_ok())
             })
             .count()
     }

@@ -56,13 +56,13 @@ fn load_corpus() -> Vec<(Vec<u8>, String)> {
             .unwrap_or_else(|| panic!("{}:{}: missing expected key", path.display(), lineno + 1))
             .trim()
             .to_string();
-        if expected.len() != 24 {
-            panic!(
-                "{}:{}: expected key must be 24 hex chars, got {expected:?}",
-                path.display(),
-                lineno + 1
-            );
-        }
+        assert_eq!(
+            expected.len(),
+            24,
+            "{}:{}: expected key must be 24 hex chars, got {expected:?}",
+            path.display(),
+            lineno + 1
+        );
         out.push((hex_to_bytes(&hex), expected));
     }
     out

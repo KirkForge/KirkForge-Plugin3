@@ -81,8 +81,7 @@ pub fn is_usage_enabled_at(cfg_path: &std::path::Path) -> bool {
     std::fs::read_to_string(cfg_path)
         .ok()
         .and_then(|s| toml::from_str::<ConfigFile>(&s).ok())
-        .map(|f| f.usage.enabled)
-        .unwrap_or(true)
+        .is_none_or(|f| f.usage.enabled)
 }
 
 pub fn emit_usage(record: &UsageRecord) {
