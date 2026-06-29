@@ -109,7 +109,10 @@ pub(crate) fn prune(as_json: bool) {
             "live_set_size": live.len(),
             "slices_dir": slices_dir.display().to_string(),
         });
-        println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+        crate::json_out::print_json_or(
+            &resp,
+            "{\"error\":\"prune response serialisation failed\"}",
+        );
     } else {
         println!(
             "pruned: removed {removed}, kept {kept} \
