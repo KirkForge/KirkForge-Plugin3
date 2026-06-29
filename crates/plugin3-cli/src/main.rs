@@ -67,7 +67,7 @@ enum Command {
         /// Print the source of each field (env var / XDG default).
         #[arg(long)]
         show_sources: bool,
-        /// Write-test every path; exit 78 (EX_CONFIG) on failure.
+        /// Write-test every path; exit 78 (`EX_CONFIG`) on failure.
         /// ADR-0015 § Validate.
         #[arg(long)]
         validate: bool,
@@ -98,7 +98,7 @@ enum Command {
 
 #[derive(Subcommand, Debug)]
 enum StoreSub {
-    /// Evict slices not referenced by recent_outputs.jsonl.
+    /// Evict slices not referenced by `recent_outputs.jsonl`.
     Prune,
     /// Print the slice payload referenced by a marker (B5 fix).
     Get {
@@ -143,7 +143,7 @@ enum HookKind {
     PostToolUse,
     /// Check the budget before the host sends the prompt to the model.
     UserPromptSubmit,
-    /// Emit a CompactHint so the host's compactor has a head-start.
+    /// Emit a `CompactHint` so the host's compactor has a head-start.
     PreCompact,
 }
 
@@ -200,9 +200,9 @@ enum BudgetSub {
         default: bool,
     },
     /// Zero `used` to start a fresh session; ceiling and
-    /// approaching_ratio are preserved (B2 fix, plugin3-gaps.md).
+    /// `approaching_ratio` are preserved (B2 fix, plugin3-gaps.md).
     Reset,
-    /// Emit a CompactHint for the host's compactor (ADR-0008).
+    /// Emit a `CompactHint` for the host's compactor (ADR-0008).
     Compact {
         /// Print the hint as JSON (default: human-readable).
         #[arg(long)]
@@ -241,7 +241,7 @@ fn main() {
         Command::Budget(b) => match b.sub {
             BudgetSub::Status => commands::budget::status(cli.json),
             BudgetSub::Set { ceiling, default } => {
-                commands::budget::set(ceiling, default, cli.json)
+                commands::budget::set(ceiling, default, cli.json);
             }
             BudgetSub::Reset => commands::budget::reset(cli.json),
             BudgetSub::Compact { json } => commands::budget::compact(json || cli.json),
@@ -6194,7 +6194,7 @@ mod adr_0015_validate_tests {
         for needle in [
             "Slice the tool result",
             "Check the budget",
-            "Emit a CompactHint",
+            "Emit a `CompactHint`",
         ] {
             assert!(
                 stdout.contains(needle),

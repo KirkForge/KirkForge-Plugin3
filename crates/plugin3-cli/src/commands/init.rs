@@ -85,10 +85,7 @@ pub(crate) fn merge_into_settings(
                     .get("command")
                     .and_then(|c| c.as_str())
                     .is_some_and(|c| c.starts_with("plugin3 "));
-                if !is_ours {
-                    preserved_foreign = true;
-                    merged_array.push(entry.clone());
-                } else {
+                if is_ours {
                     // Existing plugin3 entry. Same command? OK to
                     // overwrite (timeout drift is the common case).
                     // Different command? Refuse unless --force.
@@ -104,6 +101,9 @@ pub(crate) fn merge_into_settings(
                         conflict = Some((slot.to_string(), existing_cmd));
                     }
                     updated_own = true;
+                } else {
+                    preserved_foreign = true;
+                    merged_array.push(entry.clone());
                 }
             }
         }
@@ -178,7 +178,7 @@ fn claude_code_settings_path(home: &Path) -> PathBuf {
 }
 
 /// I/O wrapper — read the existing settings file (if any), merge
-/// the host's HookConfig in, and write the result. `--dry-run`
+/// the host's `HookConfig` in, and write the result. `--dry-run`
 /// stops after the merge and emits the JSON to stdout.
 ///
 /// Exit codes (documented inline so the magic numbers at the
@@ -190,12 +190,11 @@ fn claude_code_settings_path(home: &Path) -> PathBuf {
 /// - 3  = conflict (existing plugin3 hook with a different command)
 /// - 4  = other I/O error (read/write failed)
 pub(crate) fn run(host: Host, dry_run: bool, force: bool, as_json: bool) -> i32 {
-    let home = match std::env::var_os("HOME") {
-        Some(h) => PathBuf::from(h),
-        None => {
-            eprintln!("plugin3 init: HOME is not set; cannot resolve settings path");
-            return 4;
-        }
+    let home = if let Some(h) = std::env::var_os("HOME") {
+        PathBuf::from(h)
+    } else {
+        eprintln!("plugin3 init: HOME is not set; cannot resolve settings path");
+        return 4;
     };
     let path = match host {
         Host::ClaudeCode => claude_code_settings_path(&home),

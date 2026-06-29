@@ -1,4 +1,4 @@
-//! Hook handlers — PostToolUse, UserPromptSubmit, PreCompact.
+//! Hook handlers — `PostToolUse`, `UserPromptSubmit`, `PreCompact`.
 //! Per ADR-0002 § Crate layout (`crates/plugin3-cli/src/hooks/`).
 //!
 //! ponytail: this split is the first of several prescribed by
@@ -33,7 +33,7 @@ fn print_json<T: Serialize>(value: &T, fallback: &str) {
         eprintln!("plugin3: response serialisation failed: {e}");
         fallback.to_string()
     });
-    println!("{}", s);
+    println!("{s}");
 }
 
 // ponytail: detect_host is one-time at CLI startup per ADR-0013.
@@ -56,7 +56,7 @@ pub struct CommandHook {
 
 /// All three hook slots, one per host event. A `None` slot means
 /// the host doesn't register that hook (a host without
-/// `PreCompact`, say, gets only PostToolUse + UserPromptSubmit).
+/// `PreCompact`, say, gets only `PostToolUse` + `UserPromptSubmit`).
 #[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
 pub struct HookConfig {
     #[serde(rename = "PostToolUse", skip_serializing_if = "Option::is_none")]
@@ -138,33 +138,32 @@ pub(crate) fn post_tool_use() {
             Some(payload.tool_name.clone()),
         )],
     );
-    let decision = match result.decisions.into_iter().next() {
-        Some((_, decision)) => decision,
-        None => {
-            // ponytail: this branch should be unreachable today (the
-            // orchestrator returns one decision per input). Treat it as
-            // a pass-through rather than panicking inside the host hook
-            // — a future orchestrator change must not crash Claude
-            // Code's PostToolUse handler.
-            eprintln!("plugin3: orchestrator returned no decision; passing input through");
-            let resp = PostToolUseResponse {
-                content: payload.content.clone(),
-                note: Some("plugin3: no slicing decision produced; passing through".into()),
-            };
-            print_json(
-                &resp,
-                r#"{"content":"","note":"plugin3: response serialisation failed"}"#,
-            );
-            append_recent(
-                &if payload.tool_result_key.is_empty() {
-                    "passthrough".to_string()
-                } else {
-                    payload.tool_result_key.clone()
-                },
-                bytes_in,
-            );
-            return;
-        }
+    let decision = if let Some((_, decision)) = result.decisions.into_iter().next() {
+        decision
+    } else {
+        // ponytail: this branch should be unreachable today (the
+        // orchestrator returns one decision per input). Treat it as
+        // a pass-through rather than panicking inside the host hook
+        // — a future orchestrator change must not crash Claude
+        // Code's PostToolUse handler.
+        eprintln!("plugin3: orchestrator returned no decision; passing input through");
+        let resp = PostToolUseResponse {
+            content: payload.content.clone(),
+            note: Some("plugin3: no slicing decision produced; passing through".into()),
+        };
+        print_json(
+            &resp,
+            r#"{"content":"","note":"plugin3: response serialisation failed"}"#,
+        );
+        append_recent(
+            &if payload.tool_result_key.is_empty() {
+                "passthrough".to_string()
+            } else {
+                payload.tool_result_key.clone()
+            },
+            bytes_in,
+        );
+        return;
     };
     // ponytail: the orchestrator's `DetectorCache` already
     // detected the kind for the Slice/Keep decision and now

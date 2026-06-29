@@ -67,27 +67,26 @@ pub(crate) fn prune(as_json: bool) {
     // scan. Mirror the read_dir fall-through in
     // `FileOffloadStore::len` (B12 fix): `map_or(0, ...)` for the
     // empty case, here we report 0/0.
-    let entries = match std::fs::read_dir(&slices_dir) {
-        Ok(e) => e,
-        Err(_) => {
-            if as_json {
-                let resp = serde_json::json!({
-                    "removed": 0, "kept": 0, "live_set_size": live.len(),
-                    "slices_dir": slices_dir.display().to_string(),
-                    "note": "slices dir absent (fresh install or never sliced)",
-                });
-                crate::json_out::print_json(&resp);
-            } else {
-                println!(
-                    "no slices dir at {} (nothing to prune)",
-                    slices_dir.display()
-                );
-            }
-            return;
+    let entries = if let Ok(e) = std::fs::read_dir(&slices_dir) {
+        e
+    } else {
+        if as_json {
+            let resp = serde_json::json!({
+                "removed": 0, "kept": 0, "live_set_size": live.len(),
+                "slices_dir": slices_dir.display().to_string(),
+                "note": "slices dir absent (fresh install or never sliced)",
+            });
+            crate::json_out::print_json(&resp);
+        } else {
+            println!(
+                "no slices dir at {} (nothing to prune)",
+                slices_dir.display()
+            );
         }
+        return;
     };
     let slice_files: Vec<String> = entries
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
         .filter_map(|e| e.file_name().to_str().map(str::to_owned))
         .collect();
 
@@ -216,7 +215,8 @@ fn base64_encode(bytes: &[u8]) -> String {
     let mut out = String::with_capacity((bytes.len() + 2) / 3 * 4);
     let mut i = 0;
     while i + 3 <= bytes.len() {
-        let n = ((bytes[i] as u32) << 16) | ((bytes[i + 1] as u32) << 8) | (bytes[i + 2] as u32);
+        let n =
+            (u32::from(bytes[i]) << 16) | (u32::from(bytes[i + 1]) << 8) | u32::from(bytes[i + 2]);
         out.push(ALPHABET[((n >> 18) & 0x3F) as usize] as char);
         out.push(ALPHABET[((n >> 12) & 0x3F) as usize] as char);
         out.push(ALPHABET[((n >> 6) & 0x3F) as usize] as char);
@@ -225,13 +225,13 @@ fn base64_encode(bytes: &[u8]) -> String {
     }
     let rem = bytes.len() - i;
     if rem == 1 {
-        let n = (bytes[i] as u32) << 16;
+        let n = u32::from(bytes[i]) << 16;
         out.push(ALPHABET[((n >> 18) & 0x3F) as usize] as char);
         out.push(ALPHABET[((n >> 12) & 0x3F) as usize] as char);
         out.push('=');
         out.push('=');
     } else if rem == 2 {
-        let n = ((bytes[i] as u32) << 16) | ((bytes[i + 1] as u32) << 8);
+        let n = (u32::from(bytes[i]) << 16) | (u32::from(bytes[i + 1]) << 8);
         out.push(ALPHABET[((n >> 18) & 0x3F) as usize] as char);
         out.push(ALPHABET[((n >> 12) & 0x3F) as usize] as char);
         out.push(ALPHABET[((n >> 6) & 0x3F) as usize] as char);

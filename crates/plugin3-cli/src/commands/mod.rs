@@ -3,8 +3,8 @@
 //!
 //! ponytail: each subcommand lives in its own file because the
 //! handlers have grown past 50 lines and have distinct
-//! dependencies (report pulls UsageRecord, config pulls Paths,
-//! init pulls Host + HookConfig). Splitting makes the dependency
+//! dependencies (report pulls `UsageRecord`, config pulls Paths,
+//! init pulls Host + `HookConfig`). Splitting makes the dependency
 //! surface obvious to a contributor who only wants to touch one
 //! of them.
 
