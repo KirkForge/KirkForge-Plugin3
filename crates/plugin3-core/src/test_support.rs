@@ -45,7 +45,17 @@ impl ReentrantMutex {
 
     fn lock(&self) -> ReentrantMutexGuard<'_> {
         let current = std::thread::current().id();
-        let mut state = self.state.lock().unwrap();
+        // ponytail: a test may panic while holding the env guard (the
+        // `env_guard_restores_prior_value_on_panic` regression test does
+        // exactly this inside `catch_unwind`). The guard's Drop restores
+        // the env var during unwind, so the mutex invariant is actually
+        // fine even though std marks it "poisoned". Recover with
+        // `into_inner()` rather than letting PoisonError fail every
+        // subsequent test.
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         if state.holder == Some(current) {
             // Same thread already holds the lock; just recurse.
             state.depth += 1;
@@ -56,8 +66,14 @@ impl ReentrantMutex {
         }
         // Another thread (or none) holds it. Block on the real mutex.
         drop(state);
-        let guard = self.mutex.lock().unwrap();
-        state = self.state.lock().unwrap();
+        let guard = self
+            .mutex
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         state.holder = Some(current);
         state.depth = 1;
         ReentrantMutexGuard {
@@ -74,7 +90,11 @@ struct ReentrantMutexGuard<'a> {
 
 impl Drop for ReentrantMutexGuard<'_> {
     fn drop(&mut self) {
-        let mut state = self.mutex.state.lock().unwrap();
+        let mut state = self
+            .mutex
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         if state.depth > 1 {
             state.depth -= 1;
             return;
