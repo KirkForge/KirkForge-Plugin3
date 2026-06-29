@@ -41,7 +41,7 @@ fn from_tool_name(name: &str) -> Option<ToolOutputKind> {
         "cargo test" | "jest" | "pytest" | "mocha" => Some(ToolOutputKind::TestRunner),
         "rustc" | "cargo build" | "tsc" | "gcc" => Some(ToolOutputKind::Compiler),
         "cmake" | "make" | "gradle" => Some(ToolOutputKind::BuildLog),
-        "rg" | "grep" | "ag" => Some(ToolOutputKind::SearchResults),
+        "rg" | "grep" | "ag" | "Grep" => Some(ToolOutputKind::SearchResults),
         // ponytail: only literal "cat" matches; bash scripts that wrap cat
         // go through GenericShell. Add wrapped-cat when a real user reports
         // a wrong-default bug.
@@ -60,8 +60,6 @@ fn from_tool_name(name: &str) -> Option<ToolOutputKind> {
         // tightest threshold class (2 KB) which matches the user's
         // intent for ad-hoc commands.
         "Bash" => Some(ToolOutputKind::GenericShell),
-        // Grep on the host side is the same as rg/grep/ag on the CLI.
-        "Grep" => Some(ToolOutputKind::SearchResults),
         _ => None,
     }
 }
