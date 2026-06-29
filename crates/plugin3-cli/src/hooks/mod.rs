@@ -138,9 +138,12 @@ pub(crate) fn post_tool_use() {
             Some(payload.tool_name.clone()),
         )],
     );
-    let decision = if let Some((_, decision)) = result.decisions.into_iter().next() {
-        decision
-    } else {
+    let Some((_, decision)) = result.decisions.into_iter().next() else {
+        // ponytail: this branch should be unreachable today (the
+        // orchestrator returns one decision per input). Treat it as
+        // a pass-through rather than panicking inside the host hook
+        // — a future orchestrator change must not crash Claude
+        // Code's PostToolUse handler.
         // ponytail: this branch should be unreachable today (the
         // orchestrator returns one decision per input). Treat it as
         // a pass-through rather than panicking inside the host hook

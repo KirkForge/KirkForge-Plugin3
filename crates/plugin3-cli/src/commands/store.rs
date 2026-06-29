@@ -67,9 +67,7 @@ pub(crate) fn prune(as_json: bool) {
     // scan. Mirror the read_dir fall-through in
     // `FileOffloadStore::len` (B12 fix): `map_or(0, ...)` for the
     // empty case, here we report 0/0.
-    let entries = if let Ok(e) = std::fs::read_dir(&slices_dir) {
-        e
-    } else {
+    let Ok(entries) = std::fs::read_dir(&slices_dir) else {
         if as_json {
             let resp = serde_json::json!({
                 "removed": 0, "kept": 0, "live_set_size": live.len(),
