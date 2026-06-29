@@ -1,9 +1,9 @@
-//! ADR-0016 § Drift tests #1 (OffloadStore drift) — the load-bearing
+//! ADR-0016 § Drift tests #1 (`OffloadStore` drift) — the load-bearing
 //! drift test per the ADR. Pins `plugin3_core::store::make_key`
 //! against a fixture of canonical BLAKE3 outputs so a contributor
 //! who swaps the hash function or changes the truncation length
-//! fails CI. ADR-0004 § Key format calls make_key "byte-compatible
-//! with Stratum's make_offload_key"; this fixture IS that contract.
+//! fails CI. ADR-0004 § Key format calls `make_key` "byte-compatible
+//! with Stratum's `make_offload_key`"; this fixture IS that contract.
 //!
 //! ponytail: zero-deps loader — reads one TSV file at
 //! `tests/fixtures/store_keys.tsv`. Each non-comment line is

@@ -2,10 +2,10 @@
 //! live in the ADR prose and must stay in lockstep with the
 //! `plugin3-core/src/cost.rs` impl. Companion to the in-file
 //! tests inside `cost.rs` (which pin impl-side serde shapes and
-//! classify_kind behaviour); this file pins the *spec surface*
-//! — the § UsageKind enum, the § Emission site code block, the
+//! `classify_kind` behaviour); this file pins the *spec surface*
+//! — the § `UsageKind` enum, the § Emission site code block, the
 //! § File location code block, the § Privacy gate, and the new
-//! § Intervention → UsageKind mapping subsection.
+//! § Intervention → `UsageKind` mapping subsection.
 //!
 //! ponytail: literal-substring scan per contract, no markdown
 //! parser. The ADR owns the exact strings; `contains` catches
@@ -74,7 +74,7 @@ fn adr_0010_file_location_block() -> String {
     fence_after[..fence_end_rel].to_string()
 }
 
-/// Read ADR-0010's § UsageKind enum code block.
+/// Read ADR-0010's § `UsageKind` enum code block.
 fn adr_0010_usage_kind_block() -> String {
     let adr = adr_0010();
     let section_start = adr
@@ -95,7 +95,7 @@ fn adr_0010_usage_kind_block() -> String {
     fence_after[..fence_end_rel].to_string()
 }
 
-/// Read ADR-0010's § Intervention → UsageKind mapping code block.
+/// Read ADR-0010's § Intervention → `UsageKind` mapping code block.
 fn adr_0010_classify_kind_block() -> String {
     let adr = adr_0010();
     let section_start = adr

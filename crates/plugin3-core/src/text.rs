@@ -219,16 +219,14 @@ mod tests {
                 );
                 assert!(
                     s.is_char_boundary(f),
-                    "floor({:?}, {at}) = {f} must be a char boundary",
-                    s
+                    "floor({s:?}, {at}) = {f} must be a char boundary"
                 );
                 assert!(
                     s.is_char_boundary(c),
-                    "ceil({:?}, {at}) = {c} must be a char boundary",
-                    s
+                    "ceil({s:?}, {at}) = {c} must be a char boundary"
                 );
-                assert!(f <= at, "floor({:?}, {at}) = {f} must be ≤ at", s);
-                assert!(c >= at, "ceil({:?}, {at}) = {c} must be ≥ at", s);
+                assert!(f <= at, "floor({s:?}, {at}) = {f} must be ≤ at");
+                assert!(c >= at, "ceil({s:?}, {at}) = {c} must be ≥ at");
             }
         }
     }

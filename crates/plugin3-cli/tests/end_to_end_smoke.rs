@@ -5,7 +5,7 @@
 //! and verifies the bytes the host would observe.
 //!
 //! ponytail: one test file, one happy path. Three sub-process calls
-//! in sequence against a single tempdir — PostToolUse slices a
+//! in sequence against a single tempdir — `PostToolUse` slices a
 //! large payload, budget set + status round-trips, report sees the
 //! slice record. The user only needs to know "did the binary do the
 //! right thing end-to-end" — not "did module X call module Y".
@@ -57,7 +57,7 @@ fn write_stdin(mut child: std::process::Child, payload: &[u8]) -> std::process::
 
 /// Happy-path end-to-end smoke test. Walks the binary through the
 /// three load-bearing subcommands a real host interacts with —
-/// PostToolUse (slice a 12 KB cargo-test body), budget set (persist
+/// `PostToolUse` (slice a 12 KB cargo-test body), budget set (persist
 /// a new ceiling), budget status (read it back), report (verify the
 /// slice record landed). Each call asserts on the literal output the
 /// host would see, so a regression in any module surfaces as a real
@@ -179,15 +179,15 @@ fn end_to_end_post_tool_use_budget_report_round_trip() {
 /// Budget guard Slice path — drives the binary through the load-bearing
 /// sequence that turns a small budget + a large prompt into a
 /// `Intervention::Slice` recommendation. The whole point of the
-/// UserPromptSubmit hook is to keep a runaway prompt from blowing the
+/// `UserPromptSubmit` hook is to keep a runaway prompt from blowing the
 /// ceiling; this test pins that the recommendation actually fires,
 /// targets the largest recent output, and lands a slice record in the
 /// usage.jsonl that `report --last` can read back.
 ///
 /// ponytail: one file, one happy path per test. The previous
-/// end_to_end_smoke.rs test pins the PostToolUse + report path; this
-/// test pins the UserPromptSubmit + budget-guard Slice path. They
-/// share the same FreshDirs helper but never run in the same process,
+/// `end_to_end_smoke.rs` test pins the `PostToolUse` + report path; this
+/// test pins the `UserPromptSubmit` + budget-guard Slice path. They
+/// share the same `FreshDirs` helper but never run in the same process,
 /// so each gets a clean tempdir.
 #[test]
 fn end_to_end_budget_guard_forces_slice_on_oversized_prompt() {
@@ -344,19 +344,19 @@ fn end_to_end_budget_guard_forces_slice_on_oversized_prompt() {
     );
 }
 
-/// PreCompact hook round-trip — the third (and least-exercised) host
-/// event. The earlier two tests pin PostToolUse and UserPromptSubmit
-/// at the subprocess wire level; this test pins PreCompact so a
+/// `PreCompact` hook round-trip — the third (and least-exercised) host
+/// event. The earlier two tests pin `PostToolUse` and `UserPromptSubmit`
+/// at the subprocess wire level; this test pins `PreCompact` so a
 /// contributor who breaks the `hint`/`summary` envelope (renames a
 /// key, drops the null-vs-object distinction on the parse-failure
 /// path, swaps `LocalSummaryCompactor` for a stub that returns "") is
-/// caught here. The pre_compact_wire_shape_pins_parse_failure_and_empty_history
+/// caught here. The `pre_compact_wire_shape_pins_parse_failure_and_empty_history`
 /// drift test in `hooks/mod.rs` pins the *source literal*; this
 /// integration test pins the *actual binary output*, which is the
 /// contract Claude Code reads.
 ///
-/// ponytail: 3 history turns. index, role, content_preview are the
-/// three required fields (canonical::Turn). Empty preview is fine —
+/// ponytail: 3 history turns. index, role, `content_preview` are the
+/// three required fields (`canonical::Turn`). Empty preview is fine —
 /// `LocalSummaryCompactor` runs over the joined string and produces
 /// either a non-empty summary or "" on failure; either is a valid
 /// response, so we don't pin the summary's content, only that the
@@ -442,7 +442,7 @@ fn hint_type_name(v: &serde_json::Value) -> &'static str {
 /// binary so a contributor who breaks the exit-code path
 /// (`exit_config_err` import, the magic-number argument, or the
 /// `eprintln` formatting) is caught at the user-visible boundary.
-/// Per ADR-0015 § Exit codes, config failures map to 78 (EX_CONFIG).
+/// Per ADR-0015 § Exit codes, config failures map to 78 (`EX_CONFIG`).
 ///
 /// ponytail: hermetic fresh tempdir — every check must pass on a
 /// brand-new install. A future contributor who adds a check that

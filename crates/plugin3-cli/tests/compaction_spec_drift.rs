@@ -4,7 +4,7 @@
 //! `plugin3-cli/src/main.rs` clap subcommand. Companion to the
 //! in-file tests inside `compaction.rs` (which pin impl-side
 //! behaviour); this file pins the *spec surface* — the
-//! § CompactHint payload, the § Local summary, the
+//! § `CompactHint` payload, the § Local summary, the
 //! § Compact subcommand, and the `LocalSummaryCompactor`
 //! default.
 //!
@@ -33,7 +33,7 @@ fn adr_0008() -> String {
     read(&repo_root().join("docs/adr/0008-compaction-strategy.md"))
 }
 
-/// Read ADR-0008's § CompactHint payload code block.
+/// Read ADR-0008's § `CompactHint` payload code block.
 fn adr_0008_compact_hint_block() -> String {
     let adr = adr_0008();
     let section_start = adr

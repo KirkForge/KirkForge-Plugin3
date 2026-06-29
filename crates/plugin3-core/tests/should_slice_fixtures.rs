@@ -1,4 +1,4 @@
-//! ADR-0006 § should_slice drift corpus — pins the per-kind
+//! ADR-0006 § `should_slice` drift corpus — pins the per-kind
 //! slicing threshold table. A contributor who bumps
 //! `TestRunner` from 8 KiB to 16 KiB (or splits `BuildLog` from
 //! `Json`) surfaces here for review instead of silently changing

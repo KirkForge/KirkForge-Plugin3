@@ -856,13 +856,12 @@ fn adr_0016_workspace_has_no_proptest_or_assert_cmd_dep() {
         for phantom in ["proptest", "assert_cmd", "predicate"] {
             assert!(
                 !body.contains(phantom),
-                "[{}] Cargo.toml references phantom dep `{phantom}` — \
+                "[{label}] Cargo.toml references phantom dep `{phantom}` — \
                  ADR-0016 § Property tests and § Implementation notes \
                  pin the LCG-fixture + `std::process::Command` pattern \
                  instead. Adding `{phantom}` is a future ADR with a \
                  fixture-vs-proptest rationale; update ADR-0016 and \
                  ADR-0017 together.",
-                label,
             );
         }
     }
@@ -1096,12 +1095,11 @@ fn adr_0012_no_speculative_feature_gate_in_cargo() {
         for phantom in ["[features]", "speculative"] {
             assert!(
                 !body.contains(phantom),
-                "[{}] Cargo.toml references phantom `{phantom}` — \
+                "[{label}] Cargo.toml references phantom `{phantom}` — \
                  ADR-0017 § Feature gates says \"The MVP has no \
                  [features] section in any Cargo.toml\" and ADR-0012 \
                  is Deferred. Adding the gate is the promotion signal; \
                  flip ADR-0012 to Accepted first.",
-                label,
             );
         }
     }

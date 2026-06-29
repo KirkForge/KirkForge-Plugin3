@@ -1,6 +1,6 @@
-//! ADR-0003 (SlicingTransform + CompactionTransform) drift
-//! tests — pin the § SlicingTransform trait, § HeadTailSlicer,
-//! § CompactionTransform trait, and § Implementation notes
+//! ADR-0003 (`SlicingTransform` + `CompactionTransform`) drift
+//! tests — pin the § `SlicingTransform` trait, § `HeadTailSlicer`,
+//! § `CompactionTransform` trait, and § Implementation notes
 //! `slice_or_skip` prose against the actual impl in
 //! `crates/plugin3-core/src/slicing.rs` and `compaction.rs`.
 //! Companion to the unit tests inside those modules (which
@@ -37,7 +37,7 @@ fn adr_0003() -> String {
     read(&repo_root().join("docs/adr/0003-output-split.md"))
 }
 
-/// Read ADR-0003's § SlicingTransform trait code block.
+/// Read ADR-0003's § `SlicingTransform` trait code block.
 fn adr_0003_slicing_trait_block() -> String {
     let adr = adr_0003();
     let section_start = adr
@@ -58,7 +58,7 @@ fn adr_0003_slicing_trait_block() -> String {
     fence_after[..fence_end_rel].to_string()
 }
 
-/// Read ADR-0003's § HeadTailSlicer code block. Scoped to
+/// Read ADR-0003's § `HeadTailSlicer` code block. Scoped to
 /// the fenced `rust` block only — the explanatory paragraphs
 /// around the block mention the older inline format
 /// (`<<plugin3:slice:{}>>`) in negation context, and the

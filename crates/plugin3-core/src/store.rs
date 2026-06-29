@@ -327,8 +327,7 @@ mod tests {
         // File layout: <slices_dir>/<key>, plain filename.
         assert!(
             dir.path().join(&k1).is_file(),
-            "file must be named by key directly, got: {}",
-            k1
+            "file must be named by key directly, got: {k1}"
         );
         assert!(dir.path().join(&k2).is_file());
     }

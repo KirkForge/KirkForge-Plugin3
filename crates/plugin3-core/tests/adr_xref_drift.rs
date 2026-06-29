@@ -18,7 +18,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-/// Repo root is the grandparent of CARGO_MANIFEST_DIR. Tests run
+/// Repo root is the grandparent of `CARGO_MANIFEST_DIR`. Tests run
 /// from `crates/plugin3-core/tests/`, so the manifest is
 /// `crates/plugin3-core/Cargo.toml` and the workspace root sits
 /// two levels up.

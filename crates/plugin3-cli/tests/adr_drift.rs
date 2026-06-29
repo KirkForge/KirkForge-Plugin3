@@ -104,9 +104,7 @@ fn every_adr_cross_reference_resolves_to_a_real_file() {
 
     assert!(
         missing.is_empty(),
-        "broken ADR cross-references: {:#?}\n  real ADRs: {:#?}",
-        missing,
-        real,
+        "broken ADR cross-references: {missing:#?}\n  real ADRs: {real:#?}",
     );
 }
 

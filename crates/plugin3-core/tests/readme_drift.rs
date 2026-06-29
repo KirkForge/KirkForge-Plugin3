@@ -92,7 +92,7 @@ fn parse_readme_test_count(readme: &str) -> Option<usize> {
             continue;
         }
         let cell = cells[1];
-        let digits: String = cell.chars().take_while(|c| c.is_ascii_digit()).collect();
+        let digits: String = cell.chars().take_while(char::is_ascii_digit).collect();
         if digits.is_empty() {
             continue;
         }

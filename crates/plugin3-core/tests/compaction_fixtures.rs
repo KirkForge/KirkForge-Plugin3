@@ -1,6 +1,6 @@
 //! ADR-0008 § Implementation notes — the drift test pins
 //! `local_summarise` output for a known corpus so a contributor
-//! who tweaks the heuristic (line filter, max_bytes truncation,
+//! who tweaks the heuristic (line filter, `max_bytes` truncation,
 //! long-line skip threshold) fails CI for review.
 //!
 //! ponytail: same shape as `estimator_fixtures.rs` and

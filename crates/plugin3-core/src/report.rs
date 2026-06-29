@@ -167,7 +167,7 @@ mod tests {
             rec(UsageKind::Slice, "s2", None, Some(50)),       // None in → 0
             rec(UsageKind::Slice, "s2", Some(100), None),      // None out → unchanged
         ];
-        let v: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+        let v: Vec<&str> = lines.iter().map(std::string::String::as_str).collect();
         let by_session = aggregate_sessions(&v);
         let s1 = by_session["s1"];
         let s2 = by_session["s2"];
@@ -197,7 +197,7 @@ mod tests {
             rec(UsageKind::Prompt, "s1", None, None),
             rec(UsageKind::Response, "s1", None, None),
         ];
-        let v: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+        let v: Vec<&str> = lines.iter().map(std::string::String::as_str).collect();
         let s = &aggregate_sessions(&v)["s1"];
         assert_eq!(s.warnings, 2, "BudgetWarn + BudgetOver = 2 warnings");
         assert_eq!(s.compactions, 1, "CompactHint → 1 compaction");
@@ -218,7 +218,7 @@ mod tests {
             r#"{"kind":"slice","ts":"2026-06-27T00:00:00Z","session_id":"","bytes_in":50,"bytes_out":10}"#.to_string(),
             rec(UsageKind::BudgetWarn, "s1", None, None),
         ];
-        let v: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+        let v: Vec<&str> = lines.iter().map(std::string::String::as_str).collect();
         let by_session = aggregate_sessions(&v);
         assert!(by_session.contains_key("s1"));
         assert!(
@@ -235,7 +235,10 @@ mod tests {
             r#"{"kind":"slice","ts":"2026-06-27T00:00:00Z","bytes_in":50,"bytes_out":10}"#
                 .to_string(),
         ];
-        let v2: Vec<&str> = missing_sid.iter().map(|s| s.as_str()).collect();
+        let v2: Vec<&str> = missing_sid
+            .iter()
+            .map(std::string::String::as_str)
+            .collect();
         assert!(
             aggregate_sessions(&v2).is_empty(),
             "missing session_id (String, no default) must drop the record entirely"
@@ -255,7 +258,7 @@ mod tests {
             rec(UsageKind::BudgetWarn, "s2", None, None),
             rec(UsageKind::CompactHint, "s1", None, None),
         ];
-        let v: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+        let v: Vec<&str> = lines.iter().map(std::string::String::as_str).collect();
         // kind=Slice → 2 lines survive, tail(10) keeps both.
         let f = filter_lines(&v, None, Some(UsageKind::Slice));
         assert_eq!(f.len(), 2);
@@ -396,7 +399,7 @@ mod tests {
             r#"{"kind":"response"}"#.to_string(), // valid JSON but missing required fields
             rec(UsageKind::CompactHint, "s1", None, None),
         ];
-        let v: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+        let v: Vec<&str> = lines.iter().map(std::string::String::as_str).collect();
         let f = filter_lines(&v, None, None);
         // 3 valid UsageRecord rows; both garbage lines dropped.
         assert_eq!(
@@ -427,7 +430,7 @@ mod tests {
             rec(UsageKind::BudgetWarn, "s1", None, None),
             rec(UsageKind::BudgetWarn, "s2", None, None),
         ];
-        let v: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+        let v: Vec<&str> = lines.iter().map(std::string::String::as_str).collect();
         let f = filter_lines(&v, Some("s1"), Some(UsageKind::Slice));
         // Only the (s1, Slice) row survives.
         assert_eq!(

@@ -34,7 +34,7 @@ fn read(path: &Path) -> String {
 /// Read ADR-0014's § Directory layout code block (the first
 /// fenced `text` block in the § Directory layout subsection).
 /// Excludes surrounding prose so the reconciliation note can
-/// mention deprecated artifacts (e.g. "SQLite was removed
+/// mention deprecated artifacts (e.g. "`SQLite` was removed
 /// when ...") without tripping the drift test.
 fn adr_0014_directory_layout_block() -> String {
     let adr = read(&repo_root().join("docs/adr/0014-state-management.md"));

@@ -383,8 +383,7 @@ mod tests {
             assert!(
                 !path.exists(),
                 "usage.jsonl must not be written when [usage] enabled=false; \
-                 found existing file at {:?}",
-                path
+                 found existing file at {path:?}"
             );
         }
     }

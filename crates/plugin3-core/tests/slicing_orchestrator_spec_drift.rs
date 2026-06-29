@@ -57,7 +57,7 @@ fn adr_0007_orchestrator_api_block() -> String {
 
 /// Read ADR-0007's § Logging block (the entire subsection —
 /// it's a short paragraph + a code block, not a fenced
-/// region we can scope to). The "no tracing::info!" check
+/// region we can scope to). The "no `tracing::info`!" check
 /// is on the whole subsection; the explanatory paragraph is
 /// allowed to mention `tracing` in the context of "the
 /// earlier draft specified ... but the MVP doesn't".

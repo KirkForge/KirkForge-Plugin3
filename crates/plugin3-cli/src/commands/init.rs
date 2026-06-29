@@ -446,8 +446,7 @@ mod tests {
         assert_eq!(arr[1]["command"], "plugin3 hook post-tool-use");
         assert!(
             outcome.preserved_foreign,
-            "preserved_foreign must be true when a foreign hook survives; got {:?}",
-            outcome
+            "preserved_foreign must be true when a foreign hook survives; got {outcome:?}"
         );
     }
 

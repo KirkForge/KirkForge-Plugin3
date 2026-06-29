@@ -92,7 +92,7 @@ fn adr_0009_implementation_notes() -> String {
     adr[section_start..].to_string()
 }
 
-/// Read ADR-0009's § PostToolUse flow code block (the
+/// Read ADR-0009's § `PostToolUse` flow code block (the
 /// first fenced `rust` block in that subsection).
 fn adr_0009_post_tool_use_flow_block() -> String {
     let adr = adr_0009();
@@ -114,7 +114,7 @@ fn adr_0009_post_tool_use_flow_block() -> String {
     fence_after[..fence_end_rel].to_string()
 }
 
-/// Read ADR-0009's § UserPromptSubmit flow code block.
+/// Read ADR-0009's § `UserPromptSubmit` flow code block.
 fn adr_0009_user_prompt_submit_flow_block() -> String {
     let adr = adr_0009();
     let section_start = adr
@@ -135,7 +135,7 @@ fn adr_0009_user_prompt_submit_flow_block() -> String {
     fence_after[..fence_end_rel].to_string()
 }
 
-/// Read ADR-0009's § PreCompact flow code block.
+/// Read ADR-0009's § `PreCompact` flow code block.
 fn adr_0009_pre_compact_flow_block() -> String {
     let adr = adr_0009();
     let section_start = adr

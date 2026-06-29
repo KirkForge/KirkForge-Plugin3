@@ -1,5 +1,5 @@
 //! ADR-0006 § Implementation notes — regression test pinning
-//! the detector's output for a known corpus of (tool_name, input)
+//! the detector's output for a known corpus of (`tool_name`, input)
 //! pairs. A contributor who tweaks `from_tool_name` or `from_shape`
 //! surfaces the change here, not via silent mis-classification in
 //! the user's terminal.
@@ -154,8 +154,7 @@ fn fixture_files_are_present() {
     for name in ["by_tool_name.tsv", "by_shape.tsv"] {
         assert!(
             dir.join(name).is_file(),
-            "missing fixture {} — the regression test corpus must live in tests/fixtures/detector/",
-            name,
+            "missing fixture {name} — the regression test corpus must live in tests/fixtures/detector/",
         );
     }
 }

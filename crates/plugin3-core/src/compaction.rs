@@ -271,7 +271,8 @@ mod tests {
         };
         let v: serde_json::Value = serde_json::to_value(&h).expect("serialise");
         let obj = v.as_object().expect("object");
-        let keys: std::collections::BTreeSet<&str> = obj.keys().map(|s| s.as_str()).collect();
+        let keys: std::collections::BTreeSet<&str> =
+            obj.keys().map(std::string::String::as_str).collect();
         assert_eq!(
             keys,
             [
