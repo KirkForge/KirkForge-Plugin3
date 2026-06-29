@@ -396,7 +396,7 @@ fn orchestrator_impl_sliced_variant_has_head_and_tail_fields() {
                 "head must be non-empty when a slice decision is made"
             );
         }
-        other => panic!("expected Sliced, got {:?}", other),
+        SliceDecision::Keep { .. } => panic!("expected Sliced, got Keep"),
     }
 }
 
@@ -434,6 +434,6 @@ fn orchestrator_impl_keep_variant_carries_kind_field() {
             );
             assert_eq!(*bytes, 4);
         }
-        other => panic!("expected Keep, got {:?}", other),
+        SliceDecision::Sliced { .. } => panic!("expected Keep, got Sliced"),
     }
 }
