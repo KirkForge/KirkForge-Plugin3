@@ -131,7 +131,7 @@ mod tests {
         }
 
         // 1) Only CONFIG_DIR set.
-        let _g1 = EnvGuard::set("PLUGIN3_CONFIG_DIR", "/tmp/cfg-only");
+        let g1 = EnvGuard::set("PLUGIN3_CONFIG_DIR", "/tmp/cfg-only");
         let p1 = Paths::resolve();
         assert_eq!(
             p1.config_dir,
@@ -152,12 +152,12 @@ mod tests {
              config_dir override; got {:?}",
             p1.runtime_dir
         );
-        drop(_g1);
+        drop(g1);
 
         // 2) Only DATA_DIR set. Derived data paths must track the
         // override; budget_file does NOT (it is session-local under
         // runtime_dir per B2).
-        let _g2 = EnvGuard::set("PLUGIN3_DATA_DIR", "/tmp/data-only");
+        let g2 = EnvGuard::set("PLUGIN3_DATA_DIR", "/tmp/data-only");
         let p2 = Paths::resolve();
         assert_eq!(
             p2.data_dir,
@@ -187,7 +187,7 @@ mod tests {
             PathBuf::from("/tmp/data-only"),
             "config_dir must NOT pick up the data_dir override"
         );
-        drop(_g2);
+        drop(g2);
 
         // 3) Only RUNTIME_DIR set. Derived runtime paths (budget_file)
         // must track the override.

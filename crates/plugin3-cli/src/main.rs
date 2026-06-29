@@ -3210,7 +3210,7 @@ mod adr_0015_validate_tests {
         // `runtime_dir`) we assert the label substring appears
         // (the path itself is just the tempdir).
         assert!(
-            lines[0].contains("(") && lines[0].ends_with(")"),
+            lines[0].contains('(') && lines[0].ends_with(')'),
             "line[0] must end with `(<detail>)`; got: {:?}",
             lines[0]
         );
@@ -7241,7 +7241,7 @@ mod adr_0015_validate_tests {
                     lines[3]
                 );
                 assert!(
-                    lines[3].ends_with("0"),
+                    lines[3].ends_with('0'),
                     "line[3] must end with `0` (FIFO head of 3 \
                      seeded entries); got: {:?}",
                     lines[3]
@@ -7254,7 +7254,7 @@ mod adr_0015_validate_tests {
                     lines[4]
                 );
                 assert!(
-                    lines[4].ends_with("2"),
+                    lines[4].ends_with('2'),
                     "line[4] must end with `2` (FIFO tail of 3 \
                      seeded entries, index 0..2); got: {:?}",
                     lines[4]

@@ -353,8 +353,8 @@ mod tests {
         let mut state: u64 = 0xdead_beef_cafe_babe;
         for _ in 0..50 {
             state = state
-                .wrapping_mul(6364136223846793005)
-                .wrapping_add(1442695040888963407);
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
             let n = ((state >> 32) as usize) % 4096 + 8; // 8..4104
             let pick = (state >> 8) as usize % 3;
             let chunk: String = match pick {
