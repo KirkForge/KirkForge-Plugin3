@@ -4037,6 +4037,14 @@ mod adr_0015_validate_tests {
         }
         std::fs::write(&usage_path, s).unwrap();
 
+        fn sid_of(line: &str) -> &str {
+            let key = "\"session_id\":\"";
+            let start = line.find(key).expect("session_id present") + key.len();
+            let rest = &line[start..];
+            let end = rest.find('"').expect("session_id terminated");
+            &rest[..end]
+        }
+
         let run = |last: &str, sid: &str| -> std::process::Output {
             std::process::Command::new(plugin3_binary_path())
                 // NOTE: no `--json`. Human branch.
@@ -4049,19 +4057,6 @@ mod adr_0015_validate_tests {
                 .output()
                 .unwrap_or_else(|e| panic!("spawn plugin3 --last {last} --session {sid}: {e}"))
         };
-
-        // ponytail: helper to extract session_id from a verbatim
-        // JSONL line via substring scan (the human branch does
-        // not parse — it prints raw bytes — so we mirror that
-        // here). The anchor literal `"session_id":"` is unique
-        // enough that no other field substring interferes.
-        fn sid_of(line: &str) -> &str {
-            let key = "\"session_id\":\"";
-            let start = line.find(key).expect("session_id present") + key.len();
-            let rest = &line[start..];
-            let end = rest.find('"').expect("session_id terminated");
-            &rest[..end]
-        }
 
         // Arm 1: --last 2 --session bravo → exactly 2 lines, both
         // bravo. The 2 surviving bravo rows must be in seed
