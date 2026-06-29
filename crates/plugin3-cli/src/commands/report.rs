@@ -31,6 +31,21 @@ fn missing_file_envelope(summary: bool) -> &'static str {
     }
 }
 
+/// Print a JSON value, falling back to the same empty envelope we
+/// use for a missing usage.jsonl so a wrapper's `jq` pipe never
+/// receives an empty stream. ponytail: `serde_json::to_string_pretty`
+/// on plain `Value`/map types is infallible in practice; removing the
+/// `.unwrap()` just closes the theoretical panic surface.
+fn print_json_envelope<T: serde::Serialize>(value: &T, summary: bool) {
+    match serde_json::to_string_pretty(value) {
+        Ok(s) => println!("{s}"),
+        Err(e) => {
+            eprintln!("plugin3 report: JSON serialisation failed: {e}");
+            println!("{}", missing_file_envelope(summary));
+        }
+    }
+}
+
 // ponytail: path-parameterised `at` so tests in plugin3-core
 // can drive it via a tempdir without touching the user's XDG
 // data dir. Reads the file, applies filters (delegating to the
@@ -91,7 +106,7 @@ pub(crate) fn at(
             // ponytail: serialise the BTreeMap directly. Keys are
             // session_id strings; values are SessionTotals (Copy,
             // serialise-only — no Deserialize needed for output).
-            println!("{}", serde_json::to_string_pretty(&sessions).unwrap());
+            print_json_envelope(&sessions, true);
         } else {
             for (sid, t) in &sessions {
                 println!("{}", report::format_summary_line(sid, t));
@@ -105,7 +120,7 @@ pub(crate) fn at(
             .iter()
             .filter_map(|l| serde_json::from_str(l).ok())
             .collect();
-        println!("{}", serde_json::to_string_pretty(&parsed).unwrap());
+        print_json_envelope(&parsed, false);
         return lines.len();
     }
     for line in lines {
