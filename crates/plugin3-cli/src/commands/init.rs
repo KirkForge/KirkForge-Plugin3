@@ -354,6 +354,7 @@ fn register_hooks_for(host: Host) -> hooks::HookConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use plugin3_core::test_support::EnvGuard;
     use serde_json::json;
 
     fn plugin3_hooks() -> Value {
@@ -615,32 +616,12 @@ mod tests {
     // conflict test.
     #[test]
     fn run_io_wrapper_end_to_end_scenarios() {
-        let _prior_home = std::env::var("HOME").ok();
-        struct EnvGuard {
-            key: &'static str,
-            prior: Option<String>,
-        }
-        impl EnvGuard {
-            fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self {
-                let prior = std::env::var(key).ok();
-                unsafe {
-                    std::env::set_var(key, value);
-                }
-                Self { key, prior }
-            }
-        }
-        impl Drop for EnvGuard {
-            fn drop(&mut self) {
-                match &self.prior {
-                    Some(v) => unsafe {
-                        std::env::set_var(self.key, v);
-                    },
-                    None => unsafe {
-                        std::env::remove_var(self.key);
-                    },
-                }
-            }
-        }
+        // ponytail: uses the shared process-global reentrant EnvGuard
+        // (B8 fix) imported at module scope. HOME is not one of the
+        // PLUGIN3_*_DIR vars, but EnvGuard::set accepts any key. The
+        // reentrant mutex serialises the env writes across parallel
+        // tests so the three sub-scenarios below don't race with other
+        // tests that touch HOME or PLUGIN3_*_DIR.
 
         // ---- Scenario 1: fresh install + idempotent re-run ----
         {

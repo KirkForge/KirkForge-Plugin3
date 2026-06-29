@@ -393,34 +393,12 @@ mod tests {
             eprintln!("skipping: PLUGIN3_DATA_DIR already set in this environment");
             return;
         }
-        struct EnvGuard {
-            key: &'static str,
-            prior: Option<String>,
-        }
-        impl EnvGuard {
-            fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self {
-                let prior = std::env::var(key).ok();
-                unsafe {
-                    std::env::set_var(key, value);
-                }
-                Self { key, prior }
-            }
-        }
-        impl Drop for EnvGuard {
-            fn drop(&mut self) {
-                match &self.prior {
-                    Some(v) => unsafe {
-                        std::env::set_var(self.key, v);
-                    },
-                    None => unsafe {
-                        std::env::remove_var(self.key);
-                    },
-                }
-            }
-        }
+        // ponytail: use the shared process-global reentrant EnvGuard
+        // (B8 fix) so parallel tests that touch env vars cannot race.
+        // The local guard this replaced did not serialise writes.
         let dir = tempfile::tempdir().expect("tempdir");
         let dir_str = dir.path().to_str().expect("utf8 path");
-        let _g = EnvGuard::set("PLUGIN3_DATA_DIR", dir_str);
+        let _g = plugin3_core::test_support::EnvGuard::set("PLUGIN3_DATA_DIR", dir_str);
         // ponytail: PLUGIN3_RUNTIME_DIR falls back to data_dir
         // when unset, so we don't need to override it. The
         // slices_dir under PLUGIN3_DATA_DIR/slices is what
