@@ -295,7 +295,7 @@ mod tests {
                 ToolOutputKind::Unknown,
                 "small() has no shape signal → Unknown"
             ),
-            other => panic!("expected Keep for small, got {other:?}"),
+            SliceDecision::Sliced { .. } => panic!("expected Keep for small, got Sliced"),
         }
         match &r.decisions[1].1 {
             SliceDecision::Sliced { kind, marker, .. } => {
@@ -306,7 +306,7 @@ mod tests {
                 );
                 assert!(marker.starts_with(crate::store::SLICE_MARKER_PREFIX));
             }
-            other => panic!("expected Sliced for large, got {other:?}"),
+            SliceDecision::Keep { .. } => panic!("expected Sliced for large, got Keep"),
         }
         match &r.decisions[2].1 {
             SliceDecision::Keep { kind, .. } => assert_eq!(
@@ -314,14 +314,14 @@ mod tests {
                 ToolOutputKind::Unknown,
                 "tiny() has no shape signal → Unknown"
             ),
-            other => panic!("expected Keep for tiny, got {other:?}"),
+            SliceDecision::Sliced { .. } => panic!("expected Keep for tiny, got Sliced"),
         }
         // Total saved = sum of the single Sliced row's offloaded bytes.
         let sliced_offloaded = match &r.decisions[1].1 {
             SliceDecision::Sliced {
                 bytes_offloaded, ..
             } => *bytes_offloaded,
-            _ => unreachable!(),
+            SliceDecision::Keep { .. } => unreachable!(),
         };
         assert_eq!(r.total_bytes_saved, sliced_offloaded);
     }
@@ -684,7 +684,7 @@ mod tests {
                 SliceDecision::Sliced {
                     bytes_offloaded, ..
                 } => Some(*bytes_offloaded),
-                _ => None,
+                SliceDecision::Keep { .. } => None,
             })
             .sum();
         assert_eq!(
