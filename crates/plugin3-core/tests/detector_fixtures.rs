@@ -47,9 +47,12 @@ fn load_by_tool_name() -> Vec<(String, ToolOutputKind, String)> {
         let tool = cols.next().unwrap_or("").to_string();
         let kind = parse_kind(cols.next().unwrap_or(""));
         let input = cols.next().unwrap_or("").to_string();
-        if tool.is_empty() {
-            panic!("{}:{}: empty tool_name", path.display(), lineno + 1);
-        }
+        assert!(
+            !tool.is_empty(),
+            "{}:{}: empty tool_name",
+            path.display(),
+            lineno + 1
+        );
         out.push((tool, kind, input));
     }
     out

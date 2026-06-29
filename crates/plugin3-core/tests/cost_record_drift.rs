@@ -88,8 +88,7 @@ fn usage_record_struct_field_set_is_pinned() {
         .expect("UsageRecord struct must exist in cost.rs");
     let struct_end = body[struct_start..]
         .find("\n}\n")
-        .map(|i| struct_start + i)
-        .unwrap_or(body.len());
+        .map_or(body.len(), |i| struct_start + i);
     let section = &body[struct_start..struct_end];
     for expected in [
         "pub ts:",

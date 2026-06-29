@@ -54,9 +54,12 @@ fn load_corpus() -> Vec<(Vec<u8>, usize, Vec<u8>)> {
         let expected_hex = cols.next().unwrap_or_else(|| {
             panic!("{}:{}: missing expected output", path.display(), lineno + 1)
         });
-        if cols.next().is_some() {
-            panic!("{}:{}: too many columns", path.display(), lineno + 1);
-        }
+        assert!(
+            cols.next().is_none(),
+            "{}:{}: too many columns",
+            path.display(),
+            lineno + 1
+        );
         let input = hex_to_bytes(input_hex);
         let expected = hex_to_bytes(expected_hex);
         // ponytail: empty input row is two columns (no expected output).

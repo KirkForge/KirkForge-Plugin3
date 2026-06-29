@@ -36,9 +36,12 @@ fn load_corpus() -> Vec<(String, usize)> {
             .unwrap_or_else(|e| {
                 panic!("{}:{}: bad expected value: {e}", path.display(), lineno + 1)
             });
-        if input.is_empty() {
-            panic!("{}:{}: empty input", path.display(), lineno + 1);
-        }
+        assert!(
+            !input.is_empty(),
+            "{}:{}: empty input",
+            path.display(),
+            lineno + 1
+        );
         out.push((input, expected));
     }
     out
