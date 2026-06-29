@@ -6,15 +6,16 @@
 //! handlers in `plugin3-cli::hooks` consume the canonical payload types
 //! directly and run the canonical logic themselves. This crate now
 //! exposes only `Host` detection and the canonical schemas so the host
-//! boundary stays isolated. Cursor and Aider are stub modules that
-//! document the intended shape when a future contributor adds a second
-//! host. `detect_host` defaults to Claude Code because that is the only
-//! host with CLI hook support today.
+//! boundary stays isolated. Cursor, Aider, and KirkForge are stub modules
+//! that document the intended shape when a future contributor adds a
+//! second host. `detect_host` defaults to Claude Code because that is the
+//! only host with CLI hook support today.
 
 pub mod aider;
 pub mod canonical;
 pub mod claude_code;
 pub mod cursor;
+pub mod kirkforge;
 
 pub use canonical::{
     PostToolUsePayload, PostToolUseResponse, PreCompactPayload, PreCompactResponse, Turn,
@@ -27,6 +28,7 @@ pub enum Host {
     ClaudeCode,
     Cursor,
     Aider,
+    KirkForge,
 }
 
 #[must_use]
@@ -54,10 +56,11 @@ impl EnvSource for OsEnv {
 
 pub fn detect_host_with(env: &dyn EnvSource) -> Host {
     // ponytail: only Claude Code has real CLI hook handlers. The
-    // env-var check exists so a future Cursor/Aider detection slot is
-    // obvious — `if env.is_set("CURSOR_TRACE_ID") { Host::Cursor }`.
+    // env-var checks exist so future Cursor/Aider/KirkForge detection
+    // slots are obvious — e.g.
+    // `if env.is_set("CURSOR_TRACE_ID") { Host::Cursor }`.
     // The default of Claude Code matches the working hooks today.
-    // Precedence: CLAUDE_CODE > CURSOR_TRACE_ID > AIDER > ClaudeCode.
+    // Precedence: CLAUDE_CODE > CURSOR_TRACE_ID > AIDER > KIRKFORGE_PLUGIN3 > ClaudeCode.
     // A contributor who reorders these arms breaks detection for
     // whichever host's env var is set; the drift corpus below
     // catches that swap.
@@ -67,6 +70,8 @@ pub fn detect_host_with(env: &dyn EnvSource) -> Host {
         Host::Cursor
     } else if env.is_set("AIDER") {
         Host::Aider
+    } else if env.is_set("KIRKFORGE_PLUGIN3") {
+        Host::KirkForge
     } else {
         Host::ClaudeCode
     }
@@ -77,20 +82,21 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    // ponytail: pin the Host enum's three variants and their
-    // kebab-case wire spelling. ADR-0013 § Host enum defines
-    // three variants; a contributor who adds a fourth (e.g.
-    // `Host::Codex`) without updating `detect_host_with` surfaces
-    // here. The kebab-case spelling is load-bearing: a future hook
-    // config auto-generate script reads `Host::ClaudeCode` as
-    // `"claude-code"` from a JSON manifest; renaming the variant
-    // or the rename rule breaks the manifest.
+    // ponytail: pin the Host enum's variants and their kebab-case
+    // wire spelling. ADR-0013 § Host enum defines the supported hosts;
+    // a contributor who adds a variant (e.g. `Host::Codex`) without
+    // updating `detect_host_with` surfaces here. The kebab-case
+    // spelling is load-bearing: a future hook config auto-generate
+    // script reads `Host::ClaudeCode` as `"claude-code"` from a JSON
+    // manifest; renaming the variant or the rename rule breaks the
+    // manifest.
     #[test]
     fn host_enum_three_variants_kebab_case() {
         for (h, expected) in [
             (Host::ClaudeCode, "\"claude-code\""),
             (Host::Cursor, "\"cursor\""),
             (Host::Aider, "\"aider\""),
+            (Host::KirkForge, "\"kirkforge\""),
         ] {
             assert_eq!(
                 serde_json::to_string(&h).unwrap(),
@@ -171,10 +177,10 @@ mod tests {
 
     // ponytail: ADR-0013 § Implementation notes — the env-var
     // precedence chain (CLAUDE_CODE > CURSOR_TRACE_ID > AIDER >
-    // default-to-ClaudeCode) is load-bearing: a contributor who
-    // reorders the arms, renames an env var, or changes the
-    // default silently breaks host detection. This module covers
-    // `detect_host` with an `EnvSource` trait seam so tests
+    // KIRKFORGE_PLUGIN3 > default-to-ClaudeCode) is load-bearing:
+    // a contributor who reorders the arms, renames an env var, or
+    // changes the default silently breaks host detection. This module
+    // covers `detect_host` with an `EnvSource` trait seam so tests
     // don't race on `std::env::var` mutation.
     mod detect_host_drift {
         use super::{detect_host_with, EnvSource, Host};
@@ -205,6 +211,11 @@ mod tests {
                 (&["CLAUDE_CODE"], Host::ClaudeCode, "CLAUDE_CODE only"),
                 (&["CURSOR_TRACE_ID"], Host::Cursor, "CURSOR_TRACE_ID only"),
                 (&["AIDER"], Host::Aider, "AIDER only"),
+                (
+                    &["KIRKFORGE_PLUGIN3"],
+                    Host::KirkForge,
+                    "KIRKFORGE_PLUGIN3 only",
+                ),
                 // Precedence: Claude Code beats Cursor when both set.
                 (
                     &["CLAUDE_CODE", "CURSOR_TRACE_ID"],
@@ -223,9 +234,14 @@ mod tests {
                     Host::ClaudeCode,
                     "CLAUDE_CODE beats AIDER",
                 ),
-                // All three set → Claude Code wins.
+                // All set → Claude Code wins.
                 (
-                    &["CLAUDE_CODE", "CURSOR_TRACE_ID", "AIDER"],
+                    &[
+                        "CLAUDE_CODE",
+                        "CURSOR_TRACE_ID",
+                        "AIDER",
+                        "KIRKFORGE_PLUGIN3",
+                    ],
                     Host::ClaudeCode,
                     "CLAUDE_CODE beats all",
                 ),
@@ -269,6 +285,10 @@ mod tests {
             assert_eq!(detect_host_with(&env(&["CLAUDE_CODE"])), Host::ClaudeCode);
             assert_eq!(detect_host_with(&env(&["CURSOR_TRACE_ID"])), Host::Cursor);
             assert_eq!(detect_host_with(&env(&["AIDER"])), Host::Aider);
+            assert_eq!(
+                detect_host_with(&env(&["KIRKFORGE_PLUGIN3"])),
+                Host::KirkForge
+            );
             // Near-miss names: these do not match the canonical
             // spellings, so detection falls through to the
             // default (ClaudeCode per ADR-0013). A contributor who
@@ -282,6 +302,11 @@ mod tests {
                 Host::ClaudeCode
             );
             assert_eq!(detect_host_with(&env(&["CURSOR"])), Host::ClaudeCode);
+            assert_eq!(
+                detect_host_with(&env(&["KIRKFORGE"])),
+                Host::ClaudeCode,
+                "near-miss KIRKFORGE must not be treated as KirkForge"
+            );
             // Stronger signal: a near-miss CLAUDE_PROJECT must
             // NOT shadow a real Cursor signal. If the check
             // became a starts_with, CLAUDE_PROJECT alone would

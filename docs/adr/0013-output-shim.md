@@ -38,6 +38,7 @@ pub enum Host {
     ClaudeCode,
     Cursor,
     Aider,
+    KirkForge,
 }
 
 pub trait EnvSource {
@@ -61,15 +62,17 @@ pub fn detect_host() -> Host {
 
 pub fn detect_host_with(env: &dyn EnvSource) -> Host {
     // ponytail: only Claude Code has real CLI hook handlers.
-    // The env-var check exists so a future Cursor/Aider
-    // detection slot is obvious. Precedence: CLAUDE_CODE >
-    // CURSOR_TRACE_ID > AIDER > ClaudeCode.
+    // The env-var check exists so future Cursor/Aider/KirkForge
+    // detection slots are obvious. Precedence: CLAUDE_CODE >
+    // CURSOR_TRACE_ID > AIDER > KIRKFORGE_PLUGIN3 > ClaudeCode.
     if env.is_set("CLAUDE_CODE") {
         Host::ClaudeCode
     } else if env.is_set("CURSOR_TRACE_ID") {
         Host::Cursor
     } else if env.is_set("AIDER") {
         Host::Aider
+    } else if env.is_set("KIRKFORGE_PLUGIN3") {
+        Host::KirkForge
     } else {
         Host::ClaudeCode // ponytail: default to the only host
                          // with wired hook handlers today.
@@ -224,7 +227,39 @@ environment variables, not JSON envelopes, so the shim
 will be different from Claude Code's. The MVP leaves it
 unwired; a future ADR will route here.
 
+### KirkForge shim
+
+ponytail: the KirkForge shim is a stub today for the same
+reason as Cursor and Aider — the file
+`crates/plugin3-hosts/src/kirkforge.rs` exists with a
+`stub_present` test but no real handler. KirkForge-Cli is the
+sibling host in the same plugin ecosystem; its hook model is
+assumed to emit the same canonical events as Claude Code,
+but the exact envelope shape and env-var detection are not yet
+specified. The MVP leaves it unwired; a future ADR will route
+here once the KirkForge hook contract is written.
+
 The sketched future shape:
+
+```rust
+// crates/plugin3-hosts/src/kirkforge.rs (future)
+
+pub fn handle_post_tool_use(payload: Value) -> Value {
+    // KirkForge-Cli is expected to pipe the same canonical
+    // payloads as Claude Code, but may wrap them under a
+    // different top-level key. Translate.
+    let canonical: PostToolUsePayload = serde_json::from_value(payload)
+        .expect("kirkforge PostToolUse payload");
+    let response = crate::canonical::PostToolUseResponse {
+        content: canonical.content,
+        note: None,
+    };
+    serde_json::json!({
+        "content": response.content,
+        "note": response.note,
+    })
+}
+```
 
 ```rust
 // crates/plugin3-hosts/src/aider.rs (future)
@@ -253,7 +288,7 @@ Drift tests pin the host enum and canonical payload shapes.
 The Host enum tests live in
 `crates/plugin3-hosts/src/lib.rs::tests` and assert:
 
-- the three variants serialize to kebab-case,
+- the variants serialize to kebab-case,
 - `UserPromptSubmitResponse` keeps its four tagged-enum
   variants with the load-bearing field names
   (`remaining`, `target_key`, `slice_to`, `reason`).
@@ -262,8 +297,8 @@ The `detect_host_with` precedence chain and canonical env-var
 names are pinned in the same module using an `EnvSource`
 trait seam so tests do not race on `std::env::var` mutation.
 
-The Cursor, Aider, and Claude Code shim files each contain a
-`stub_present` test asserting the module exists and is wired.
+The Cursor, Aider, KirkForge, and Claude Code shim files each
+contain a `stub_present` test asserting the module exists and is wired.
 When a stub graduates to a real shim, its drift test moves
 into a `drift_tests` module alongside the canonical wire-shape
 tests.
@@ -301,8 +336,8 @@ detected host is cached in the plugin's state file
 (ADR-0014) so subsequent hook invocations skip detection.
 
 The shim module files (`claude_code.rs`, `cursor.rs`,
-`aider.rs`) are stubs today. The real per-host translation
-happens in `plugin3-cli::hooks` until a future ADR extracts
-it. Removing the dead `emit_to` library path (B3) prevents
-a stub from silently diverging from the actual hook handler
-behaviour.
+`aider.rs`, `kirkforge.rs`) are stubs today. The real per-host
+translation happens in `plugin3-cli::hooks` until a future ADR
+extracts it. Removing the dead `emit_to` library path (B3)
+prevents a stub from silently diverging from the actual hook
+handler behaviour.
