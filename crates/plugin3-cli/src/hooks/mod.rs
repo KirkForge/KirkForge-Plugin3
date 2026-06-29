@@ -144,11 +144,6 @@ pub(crate) fn post_tool_use() {
         // a pass-through rather than panicking inside the host hook
         // — a future orchestrator change must not crash Claude
         // Code's PostToolUse handler.
-        // ponytail: this branch should be unreachable today (the
-        // orchestrator returns one decision per input). Treat it as
-        // a pass-through rather than panicking inside the host hook
-        // — a future orchestrator change must not crash Claude
-        // Code's PostToolUse handler.
         eprintln!("plugin3: orchestrator returned no decision; passing input through");
         let resp = PostToolUseResponse {
             content: payload.content.clone(),
