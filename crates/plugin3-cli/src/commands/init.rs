@@ -19,18 +19,6 @@ use serde_json::Value;
 
 use crate::hooks;
 
-/// Serialise `value` to pretty JSON, printing an error-shaped JSON
-/// envelope on failure so callers that parse stdout still receive
-/// valid JSON. ponytail: serde_json can fail on custom types; the
-/// `Value`-based call sites are infallible in practice, but removing
-/// the `.unwrap()` closes a panic surface.
-fn print_json_or_error<T: serde::Serialize>(value: &T, msg: &str) {
-    match serde_json::to_string_pretty(value) {
-        Ok(s) => println!("{s}"),
-        Err(e) => println!("{{\"error\":\"{msg}: {e}\"}}"),
-    }
-}
-
 /// Outcome of `merge_into_settings`. Lets callers (and tests)
 /// answer "what would change?" without re-parsing the output.
 #[derive(Debug, PartialEq, Eq)]
@@ -292,10 +280,10 @@ pub(crate) fn run(host: Host, dry_run: bool, force: bool, as_json: bool) -> i32 
                 "updated_own": outcome.updated_own,
                 "preserved_foreign": outcome.preserved_foreign,
             });
-            print_json_or_error(&resp, "dry-run JSON serialisation failed");
+            crate::json_out::print_json(&resp);
         } else {
             println!("dry-run: would write {}:", path.display());
-            print_json_or_error(&outcome.merged, "dry-run output serialisation failed");
+            crate::json_out::print_json(&outcome.merged);
         }
         return 0;
     }
@@ -345,7 +333,7 @@ pub(crate) fn run(host: Host, dry_run: bool, force: bool, as_json: bool) -> i32 
             "updated_own": outcome.updated_own,
             "preserved_foreign": outcome.preserved_foreign,
         });
-        print_json_or_error(&resp, "init success JSON serialisation failed");
+        crate::json_out::print_json(&resp);
     } else {
         println!("wrote {:?} hooks into {}", host, path.display());
     }

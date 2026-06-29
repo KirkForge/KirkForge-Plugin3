@@ -16,6 +16,7 @@ use plugin3_core::{
 use serde::{Deserialize, Serialize};
 
 mod exit;
+mod json_out;
 mod precedence;
 
 #[derive(Parser, Debug)]
