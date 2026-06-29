@@ -29,6 +29,7 @@ impl Paths {
 
     // Derived paths (ADR-0014 § directory layout). One source of truth
     // so the CLI and `cost::usage_path` stop computing them inline.
+    #[must_use]
     pub fn budget_file(&self) -> PathBuf {
         // ponytail: B2 fix — `used` is session-local. Keep budget.toml in
         // runtime_dir so yesterday's session counter does not bleed into
@@ -36,17 +37,21 @@ impl Paths {
         // defaults persist in config.toml (ADR-0005) and overlay at load.
         self.runtime_dir.join("budget.toml")
     }
+    #[must_use]
     pub fn slices_dir(&self) -> PathBuf {
         self.data_dir.join("slices")
     }
+    #[must_use]
     pub fn usage_log(&self) -> PathBuf {
         self.data_dir.join("logs").join("usage.jsonl")
     }
+    #[must_use]
     pub fn recent_outputs(&self) -> PathBuf {
         self.data_dir.join("recent_outputs.jsonl")
     }
     // User-editable defaults (ADR-0005 + ADR-0014). Lives in config_dir
     // alongside any future config files; written by `plugin3 budget set --default`.
+    #[must_use]
     pub fn config_file(&self) -> PathBuf {
         self.config_dir.join("config.toml")
     }

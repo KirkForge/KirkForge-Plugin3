@@ -1,4 +1,4 @@
-//! Tool output detector — classifies a (tool_name, content) pair so the
+//! Tool output detector — classifies a (`tool_name`, content) pair so the
 //! orchestrator can pick a per-kind slicing threshold.
 //! Per ADR-0006. Layered: tool-name hint, then structural shape.
 
@@ -23,6 +23,7 @@ pub enum Decision {
 }
 
 /// Layered detect: tool-name hint → structural shape → Unknown.
+#[must_use]
 pub fn detect(input: &str, tool_name: Option<&str>) -> ToolOutputKind {
     if let Some(name) = tool_name {
         if let Some(kind) = from_tool_name(name) {
@@ -104,9 +105,10 @@ fn from_shape(input: &str) -> Option<ToolOutputKind> {
     None
 }
 
-/// Per-kind slicing threshold (ADR-0006). FileContent is excluded by
+/// Per-kind slicing threshold (ADR-0006). `FileContent` is excluded by
 /// convention — slicing a `cat` result would force the user to retrieve
 /// the middle for any operation that needs more than head/tail bytes.
+#[must_use]
 pub fn should_slice(kind: ToolOutputKind, bytes: usize) -> Decision {
     let threshold = match kind {
         // ponytail: merge identical thresholds so the table is read as

@@ -1,4 +1,4 @@
-//! SlicingOrchestrator — fan-out detect → decide → slice over a batch
+//! `SlicingOrchestrator` — fan-out detect → decide → slice over a batch
 //! of recent tool outputs. Per ADR-0007.
 //!
 //! ponytail: MVP implementation iterates serially. The ADR's rayon
@@ -27,7 +27,7 @@ use crate::text::floor_char_boundary;
 /// computed via `DetectorCache::get_or_detect` to make the Slice/Keep
 /// decision. Carrying it on the decision removes the redundant
 /// `detector::detect(...)` call the CLI previously issued on the
-/// PostToolUse hot path (per output). The orchestrator's cache hits
+/// `PostToolUse` hot path (per output). The orchestrator's cache hits
 /// help the second call within a session; this field eliminates
 /// even the first call.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -76,6 +76,7 @@ pub struct DetectorCache {
 }
 
 impl DetectorCache {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -181,7 +182,7 @@ pub fn run(
                 bytes_offloaded, ..
             } => *bytes_offloaded,
         })
-        .fold(0, |acc, n| acc.saturating_add(n));
+        .fold(0, usize::saturating_add);
     OrchestratorResult {
         decisions,
         total_bytes_saved,
