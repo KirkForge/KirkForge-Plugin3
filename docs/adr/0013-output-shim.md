@@ -20,8 +20,10 @@ The shim is the boundary. Each host gets one module in
 3. Translates the canonical response back to the host's
    format.
 
-Mirrors Stratum ADR-0009 (`emit_to(host, event, payload)`).
-Plugin3 reuses the pattern.
+The MVP does **not** wire this boundary. The CLI's hook
+handlers consume the canonical payload types directly and
+run the canonical logic themselves. The shim layer is
+reserved for a future ADR when a second host is supported.
 
 ## Decision
 
@@ -58,9 +60,9 @@ pub fn detect_host() -> Host {
 }
 
 pub fn detect_host_with(env: &dyn EnvSource) -> Host {
-    // ponytail: only Claude Code has a real shim. The
-    // env-var check exists so a future Cursor/Aider detection
-    // slot is obvious. Precedence: CLAUDE_CODE >
+    // ponytail: only Claude Code has real CLI hook handlers.
+    // The env-var check exists so a future Cursor/Aider
+    // detection slot is obvious. Precedence: CLAUDE_CODE >
     // CURSOR_TRACE_ID > AIDER > ClaudeCode.
     if env.is_set("CLAUDE_CODE") {
         Host::ClaudeCode
@@ -69,10 +71,8 @@ pub fn detect_host_with(env: &dyn EnvSource) -> Host {
     } else if env.is_set("AIDER") {
         Host::Aider
     } else {
-        Host::ClaudeCode // ponytail: default to Claude Code,
-                         // the only host with a real shim.
-                         // Add explicit host selection when a
-                         // user reports a wrong-default bug.
+        Host::ClaudeCode // ponytail: default to the only host
+                         // with wired hook handlers today.
     }
 }
 ```
@@ -135,120 +135,52 @@ pub struct Turn {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct PreCompactResponse {
     // ponytail: hint is `serde_json::Value` rather than the
-    // typed `CompactHint` so the host shim can emit any
+    // typed `CompactHint` so a future host shim can emit any
     // shape the host consumes (turns count, summary text,
-    // CompactHint). The CLI side builds a typed
-    // CompactHint (ADR-0008); the host shim serialises a
-    // thin `{ "turns": N }` envelope that the host can
-    // interpret without depending on plugin3-core types.
+    // CompactHint). The CLI side builds a typed CompactHint
+    // (ADR-0008) and serialises a thin `{ "turns": N }`
+    // envelope that the host can interpret without depending
+    // on plugin3-core types.
     pub hint: serde_json::Value,
 }
 ```
 
 ### Shim entry point
 
-```rust
-// crates/plugin3-hosts/src/lib.rs
-
-pub fn emit_to(host: Host, event: Event, payload: serde_json::Value) -> serde_json::Value {
-    match (host, event) {
-        (Host::ClaudeCode, Event::PostToolUse) =>
-            claude_code::handle_post_tool_use(payload),
-        (Host::ClaudeCode, Event::UserPromptSubmit) =>
-            claude_code::handle_user_prompt_submit(payload),
-        (Host::ClaudeCode, Event::PreCompact) =>
-            claude_code::handle_pre_compact(payload),
-        // Future variants land here when Cursor/Aider graduate
-        // from stub to real shim. The stub branch returns a
-        // structured `{"unsupported": "..."}` envelope so callers
-        // can log + bail without crashing the host's hook handler.
-        _ => serde_json::json!({
-            "unsupported": format!("{host:?}/{event:?}"),
-        }),
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum Event {
-    PostToolUse,
-    UserPromptSubmit,
-    PreCompact,
-}
-```
-
-The shim is the *only* place that knows about per-host
-payload differences. Everything else in Plugin3 is host-
-agnostic.
-
-ponytail: the earlier draft's stub fall-through was a
-`panic!("unsupported host/event ...")`. The MVP returns a
-structured `{"unsupported": "..."}` Value so the host
-receives a well-formed JSON envelope rather than a crash
-trace — a host that picks up a stubbed (Cursor, Aider)
-combination today logs + bails cleanly. Promoting a stub
-to a real shim is then a one-line match-arm addition.
+ponytail: the earlier draft prescribed a single dispatch entry
+`emit_to(host, event, payload)` mirroring Stratum ADR-0009.
+That entry point was removed (B3) because it had become a
+dead passthrough: the CLI hook handlers consume the canonical
+payloads directly and run the canonical logic themselves. A
+future per-host translation layer will be re-introduced when a
+second host is supported, with the dispatch wired from
+`plugin3-cli::hooks` rather than as a library-only stub.
 
 ### Claude Code shim
 
-```rust
-// crates/plugin3-hosts/src/claude_code.rs
+ponytail: the Claude Code shim is a stub today. The real
+Claude Code payload handling lives in
+`crates/plugin3-cli/src/hooks/mod.rs`, which:
 
-pub fn handle_post_tool_use(payload: Value) -> Value {
-    let canonical: PostToolUsePayload = serde_json::from_value(payload)
-        .expect("claude_code PostToolUse payload");
-    let response = PostToolUseResponse {
-        content: canonical.content,
-        note: None,
-    };
-    // ponytail: passthrough today. The canonical slicing
-    // happens inside plugin3-core's SlicingOrchestrator (called
-    // from the CLI's `post_tool_use` handler); the shim here
-    // is a thin envelope adapter — it parses the host envelope
-    // into the canonical payload and serialises a passthrough
-    // response. A future contributor who wires the
-    // SlicingOrchestrator through the shim fills in
-    // `response.content` from the orchestrator's Sliced
-    // head/tail. The host wire shape is fixed: `{content, note}`.
-    translate_post_tool_use_response(response)
-}
+- parses the host envelope into `PostToolUsePayload` /
+  `UserPromptSubmitPayload` via `read_stdin_json`,
+- runs the canonical logic (`SlicingOrchestrator`,
+  `TokenBudget::decide`, `compaction::build_hint`),
+- serialises the canonical response back to the host wire
+  shape.
 
-pub fn handle_user_prompt_submit(payload: Value) -> Value {
-    let _canonical: UserPromptSubmitPayload = serde_json::from_value(payload)
-        .expect("claude_code UserPromptSubmit payload");
-    // ponytail: same passthrough rationale. The budget guard
-    // (ADR-0005) is what produces the Allow/Warn/Slice/Compact
-    // variants; the shim just serialises the verdict. Today
-    // the verdict is `Allow` because the host-side budget
-    // guard runs upstream of the shim.
-    let response = UserPromptSubmitResponse::Allow;
-    serde_json::to_value(response).expect("UserPromptSubmit response")
-}
-
-pub fn handle_pre_compact(payload: Value) -> Value {
-    let canonical: PreCompactPayload = serde_json::from_value(payload)
-        .expect("claude_code PreCompact payload");
-    let response = PreCompactResponse {
-        hint: serde_json::json!({ "turns": canonical.history_turns.len() }),
-    };
-    serde_json::to_value(response).expect("PreCompact response")
-}
-
-fn translate_post_tool_use_response(r: PostToolUseResponse) -> Value {
-    json!({
-        "content": r.content,
-        "note": r.note,
-    })
-}
-```
+When a future ADR extracts per-host translation into this
+crate, the Claude Code module will grow `handle_post_tool_use`,
+`handle_user_prompt_submit`, and `handle_pre_compact` functions
+that wrap the canonical types and forward to the core logic.
 
 ### Cursor shim
 
 ponytail: the Cursor shim is a stub today — the file
 `crates/plugin3-hosts/src/cursor.rs` exists with a
-`stub_present` test but no real handler. The MVP routes
-through `Host::default()` for Cursor (via `emit_to`'s
-`{"unsupported": "..."}` stub envelope), so a Cursor
-detection today is a logged no-op rather than a panic.
+`stub_present` test but no real handler. The MVP does not
+route Cursor anywhere because the dispatch entry point was
+removed (B3); a future ADR will wire the stub.
 
 When a user reports a need, the stub graduates to a real
 shim using the translation sketched below:
@@ -289,8 +221,8 @@ reason as Cursor — the file
 `crates/plugin3-hosts/src/aider.rs` exists with a
 `stub_present` test but no real handler. Aider uses
 environment variables, not JSON envelopes, so the shim
-will be different from Claude Code's. The MVP routes
-through the `{"unsupported": "..."}` stub envelope.
+will be different from Claude Code's. The MVP leaves it
+unwired; a future ADR will route here.
 
 The sketched future shape:
 
@@ -317,75 +249,60 @@ pub fn handle_post_tool_use(payload: Value) -> Value {
 
 ### Drift tests
 
-Each shim has a drift test that pins the translation. The
-Claude Code tests live in
-`crates/plugin3-hosts/src/claude_code.rs::drift_tests`
-and use the canonical payload shape:
+Drift tests pin the host enum and canonical payload shapes.
+The Host enum tests live in
+`crates/plugin3-hosts/src/lib.rs::tests` and assert:
 
-```rust
-#[test]
-fn post_tool_use_round_trips_envelope() {
-    let input = serde_json::json!({
-        "tool_name": "cargo test",
-        "tool_result_key": "abc",
-        "content": "running 5 tests\ntest foo ... ok\n",
-        "session_id": "s1",
-    });
-    let output = handle_post_tool_use(input);
-    assert!(output["content"].is_string(), "content must be a string: {output}");
-    assert!(output["note"].is_string() || output["note"].is_null(),
-        "note must be string or null: {output}");
-}
-```
+- the three variants serialize to kebab-case,
+- `UserPromptSubmitResponse` keeps its four tagged-enum
+  variants with the load-bearing field names
+  (`remaining`, `target_key`, `slice_to`, `reason`).
 
-The Cursor and Aider shims today have only a `stub_present`
-test — when a future contributor graduates a stub to a
-real shim, the corresponding drift test moves into
-`drift_tests` alongside the Claude Code tests.
+The `detect_host_with` precedence chain and canonical env-var
+names are pinned in the same module using an `EnvSource`
+trait seam so tests do not race on `std::env::var` mutation.
 
-A contributor who adds a new host writes one new module
-under `crates/plugin3-hosts/src/<host>.rs`, adds the host
-to the `Host` enum, extends `detect_host_with`'s env-var
-arms, and adds the host's `(host, event)` arms to
-`emit_to`. Drift tests pin the new host's behaviour.
-
-A contributor who adds a new host writes one new module
-under `crates/plugin3-hosts/src/<host>.rs` and adds the
-host to the `Host` enum, the `detect_host` function, and
-the `emit_to` match. Drift tests pin the new host's
-behaviour.
+The Cursor, Aider, and Claude Code shim files each contain a
+`stub_present` test asserting the module exists and is wired.
+When a stub graduates to a real shim, its drift test moves
+into a `drift_tests` module alongside the canonical wire-shape
+tests.
 
 ## Consequences
 
 Negative first:
 
 - Three shim modules is more than one. The trade is per-host
-  payload differences are isolated to the shim layer; the
-  rest of Plugin3 is host-agnostic.
+  payload differences will be isolated to the shim layer once
+  it is wired; today the CLI handlers carry that responsibility.
 - A new host is a non-trivial addition: enum variant,
-  detector function, shim module, drift tests. The README
-  documents the steps.
+  detector function, shim module, hook-handler wiring, drift
+  tests. The README documents the steps.
 
 Positive:
 
 - The canonical payload schema is documented in code. A
   contributor adding a new shim has a clear contract.
-- Drift tests catch shim regressions: a contributor who
-  changes a host's payload format fails CI.
-- The shim layer is the only place that parses host JSON.
-  Plugin3's core never sees a host-specific envelope.
+- Drift tests catch canonical-shape regressions: a contributor
+  who changes a payload field name fails CI.
+- The canonical types live in `plugin3-hosts` so the CLI and
+  any future shim share the same definitions without
+  `plugin3-core` knowing about host envelopes.
 
 ## Implementation notes
 
-The shim layer lives at `crates/plugin3-hosts/src/`. The
-canonical payload definitions live at
+The canonical payload definitions live at
 `crates/plugin3-hosts/src/canonical.rs` and are re-exported
-from the crate root.
+from the crate root. Host detection lives in
+`crates/plugin3-hosts/src/lib.rs`.
 
-The host detection is a one-time cost at startup. The
+The host detection is a one-time cost at CLI startup. The
 detected host is cached in the plugin's state file
 (ADR-0014) so subsequent hook invocations skip detection.
 
-The shim is the *only* layer that depends on the host. The
-canonical handlers (`handle_canonical_post_tool_use`, etc.)
-live in `plugin3-core` and are host-agnostic.
+The shim module files (`claude_code.rs`, `cursor.rs`,
+`aider.rs`) are stubs today. The real per-host translation
+happens in `plugin3-cli::hooks` until a future ADR extracts
+it. Removing the dead `emit_to` library path (B3) prevents
+a stub from silently diverging from the actual hook handler
+behaviour.

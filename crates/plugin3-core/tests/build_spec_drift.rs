@@ -771,10 +771,6 @@ fn adr_0016_test_files_match_adr_layout() {
         .join("plugin3-core")
         .join("tests");
     let cli_tests = repo_root().join("crates").join("plugin3-cli").join("tests");
-    let hosts_tests = repo_root()
-        .join("crates")
-        .join("plugin3-hosts")
-        .join("tests");
     // Negative: phantom files must NOT exist.
     for phantom in [
         core_tests.join("property.rs"),
@@ -813,7 +809,6 @@ fn adr_0016_test_files_match_adr_layout() {
             .then(|| core_tests.join("compaction_spec_drift.rs"))
             .unwrap_or(core_tests.join("compaction_fixtures.rs")),
         core_tests.join("fixtures"),
-        hosts_tests.join("output_shim_spec_drift.rs"),
     ] {
         assert!(
             required.exists(),

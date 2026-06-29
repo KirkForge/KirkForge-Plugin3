@@ -1,10 +1,15 @@
-//! plugin3-hosts — per-host payload translation layer. Per ADR-0013.
+//! plugin3-hosts — host detection and canonical payload schemas.
+//! Per ADR-0013.
 //!
-//! ponytail: only the Claude Code shim is implemented today. Cursor
-//! and Aider are stub modules that document the intended shape so a
-//! future contributor adding the second host has a working outline.
-//! Detect_host defaults to Claude Code because that is the only
-//! host with a real shim.
+//! ponytail: the per-host payload translation layer once planned as
+//! `emit_to(host, event, payload)` was removed (B3). The real CLI hook
+//! handlers in `plugin3-cli::hooks` consume the canonical payload types
+//! directly and run the canonical logic themselves. This crate now
+//! exposes only `Host` detection and the canonical schemas so the host
+//! boundary stays isolated. Cursor and Aider are stub modules that
+//! document the intended shape when a future contributor adds a second
+//! host. `detect_host` defaults to Claude Code because that is the only
+//! host with CLI hook support today.
 
 pub mod aider;
 pub mod canonical;
@@ -47,10 +52,10 @@ impl EnvSource for OsEnv {
 }
 
 pub fn detect_host_with(env: &dyn EnvSource) -> Host {
-    // ponytail: only Claude Code has a real shim. The env-var check
-    // exists so a future Cursor/Aider detection slot is obvious —
-    // `if env.is_set("CURSOR_TRACE_ID") { Host::Cursor }`.
-    // The default of Claude Code matches the working shim today.
+    // ponytail: only Claude Code has real CLI hook handlers. The
+    // env-var check exists so a future Cursor/Aider detection slot is
+    // obvious — `if env.is_set("CURSOR_TRACE_ID") { Host::Cursor }`.
+    // The default of Claude Code matches the working hooks today.
     // Precedence: CLAUDE_CODE > CURSOR_TRACE_ID > AIDER > ClaudeCode.
     // A contributor who reorders these arms breaks detection for
     // whichever host's env var is set; the drift corpus below
@@ -66,92 +71,19 @@ pub fn detect_host_with(env: &dyn EnvSource) -> Host {
     }
 }
 
-/// Canonical hook events plugin3 responds to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Event {
-    PostToolUse,
-    UserPromptSubmit,
-    PreCompact,
-}
-
-// ponytail: ADR-0013 § Implementation notes prescribes a single
-// dispatch entry so the canonical handlers in plugin3-core are the
-// only place that knows about payloads. Today only ClaudeCode has
-// a real shim; Cursor and Aider return a stub Value so a host
-// detector that picks them up gets an obvious `{"unsupported":
-// "..."}` shape rather than a silent no-op. Promoting a stub
-// to a real shim is then a one-line match-arm addition.
-pub fn emit_to(host: Host, event: Event, payload: serde_json::Value) -> serde_json::Value {
-    match (host, event) {
-        (Host::ClaudeCode, Event::PostToolUse) => claude_code::handle_post_tool_use(payload),
-        (Host::ClaudeCode, Event::UserPromptSubmit) => {
-            claude_code::handle_user_prompt_submit(payload)
-        }
-        (Host::ClaudeCode, Event::PreCompact) => claude_code::handle_pre_compact(payload),
-        // Future variants land here when Cursor/Aider graduate
-        // from stub to real shim. The stub branch returns a
-        // structured Value so callers can log + bail without
-        // crashing the host's hook handler.
-        _ => serde_json::json!({
-            "unsupported": format!("{host:?}/{event:?}"),
-        }),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
 
-    #[test]
-    fn emit_to_routes_post_tool_use_to_claude_code_shim() {
-        // ponytail: drift guard for the dispatcher. The shim is
-        // the only layer that knows about per-host envelopes; if
-        // a contributor re-routes (Host::ClaudeCode, PostToolUse)
-        // to the wrong module the Claude Code host breaks at
-        // runtime. One round-trip covers the dispatch.
-        let input = json!({
-            "tool_name": "cargo test",
-            "tool_result_key": "abc",
-            "content": "running 1 test\n",
-            "session_id": "s1",
-        });
-        let out = emit_to(Host::ClaudeCode, Event::PostToolUse, input);
-        assert!(
-            out["content"].is_string(),
-            "expected content field, got: {out}"
-        );
-        assert!(
-            out["note"].is_null() || out["note"].is_string(),
-            "expected nullable note, got: {out}"
-        );
-    }
-
-    #[test]
-    fn emit_to_routes_user_prompt_submit_to_claude_code_shim() {
-        let input = json!({ "prompt": "hi", "session_id": "s1" });
-        let out = emit_to(Host::ClaudeCode, Event::UserPromptSubmit, input);
-        assert_eq!(out["kind"], "allow");
-    }
-
-    #[test]
-    fn emit_to_routes_pre_compact_to_claude_code_shim() {
-        let input = json!({ "history_turns": [
-            { "index": 0, "role": "user", "content_preview": "hi" },
-        ]});
-        let out = emit_to(Host::ClaudeCode, Event::PreCompact, input);
-        assert_eq!(out["hint"]["turns"], 1);
-    }
-
     // ponytail: pin the Host enum's three variants and their
     // kebab-case wire spelling. ADR-0013 § Host enum defines
     // three variants; a contributor who adds a fourth (e.g.
-    // `Host::Codex`) without updating the detect_host arms and
-    // the dispatcher's stub fall-through surfaces here. The
-    // kebab-case spelling is load-bearing: a future shim
-    // auto-config script reads `Host::ClaudeCode` as
-    // `"claude-code"` from a JSON manifest; renaming the
-    // variant or the rename rule breaks the manifest.
+    // `Host::Codex`) without updating `detect_host_with` surfaces
+    // here. The kebab-case spelling is load-bearing: a future hook
+    // config auto-generate script reads `Host::ClaudeCode` as
+    // `"claude-code"` from a JSON manifest; renaming the variant
+    // or the rename rule breaks the manifest.
     #[test]
     fn host_enum_three_variants_kebab_case() {
         for (h, expected) in [
@@ -167,131 +99,6 @@ mod tests {
         }
     }
 
-    // ponytail: pin the Event enum's three variants. ADR-0013
-    // § Shim entry point names three: PostToolUse, UserPromptSubmit,
-    // PreCompact. A contributor who adds `Event::SessionStart`
-    // (mirroring Plugin1) without updating the dispatcher's stub
-    // fall-through surfaces here.
-    #[test]
-    fn event_enum_three_variants_pinned() {
-        // Event is intentionally NOT serde-serialised (the wire
-        // format is hook-name string from the host shim), but we
-        // pin the variant set so a contributor who renames
-        // `PreCompact` to `Pre_Compact` for style breaks the
-        // pattern match in claude_code.rs at compile time.
-        let all = [
-            Event::PostToolUse,
-            Event::UserPromptSubmit,
-            Event::PreCompact,
-        ];
-        assert_eq!(all.len(), 3, "Event must have exactly three variants");
-    }
-
-    #[test]
-    fn emit_to_unsupported_branch_pins_stub_wire_shape() {
-        // ponytail: pin the wire shape for the unsupported dispatch
-        // arm. The stub at the dispatcher's `_ =>` branch returns
-        // `{"unsupported": "<HostDebug>/<EventDebug>"}` — the
-        // Host and Event both use `{:?}` (Debug), so the rendered
-        // strings are the Rust variant names ("Cursor",
-        // "PostToolUse"), NOT kebab-case. The kebab-case rename
-        // rule on `Host` is a serde attribute only; Display would
-        // be the same ("ClaudeCode") but Debug is the chosen
-        // format because it's free with no Display impl. A
-        // contributor who:
-        //   - renames `unsupported` → `error` or `not_supported`
-        //     breaks downstream log parsers that grep for the
-        //     literal `unsupported` key as the "host not wired"
-        //     signal.
-        //   - switches `{host:?}/{event:?}` → `{host}/{event}`
-        //     (Display) happens to look the same today (no Display
-        //     impl, derived Debug falls back) but is a different
-        //     code path that future Display impls would change.
-        //   - changes the separator from `/` to `::` or ` `
-        //     breaks split-on-`/` parsers that decompose the
-        //     value back into (host, event) for retry/diagnostics.
-        //
-        // Exact shape (one representative):
-        let out = emit_to(Host::Cursor, Event::PostToolUse, json!({}));
-        assert_eq!(
-            out,
-            json!({"unsupported": "Cursor/PostToolUse"}),
-            "Cursor/PostToolUse stub must serialise to the exact shape \
-             `{{\"unsupported\": \"Cursor/PostToolUse\"}}` — a contributor \
-             who renames the key, switches to Display format, or changes \
-             the separator surfaces here."
-        );
-
-        // Sweep the 6 unsupported combos: today that's (Cursor, *)
-        // and (Aider, *) — ClaudeCode is fully supported, so its
-        // three arms never reach the stub. Each combo must produce
-        // a single `unsupported` string of the form `<HostDebug>/
-        // <EventDebug>` with exactly one `/` separator.
-        for (host, event) in [
-            (Host::Cursor, Event::PostToolUse),
-            (Host::Cursor, Event::UserPromptSubmit),
-            (Host::Cursor, Event::PreCompact),
-            (Host::Aider, Event::PostToolUse),
-            (Host::Aider, Event::UserPromptSubmit),
-            (Host::Aider, Event::PreCompact),
-        ] {
-            let out = emit_to(host, event, json!({}));
-            let v = out
-                .get("unsupported")
-                .and_then(|x| x.as_str())
-                .unwrap_or_else(|| {
-                    panic!(
-                        "{host:?}/{event:?} stub must carry a string `unsupported` \
-                     field, got: {out}"
-                    )
-                });
-            // ponytail: exactly one '/' separator (the one between
-            // host and event). A future contributor who adds a
-            // version suffix ("Cursor/PostToolUse/v1") surfaces
-            // here because the slash count goes to 2.
-            let parts: Vec<&str> = v.split('/').collect();
-            assert_eq!(
-                parts.len(),
-                2,
-                "{host:?}/{event:?} stub value must split on '/' into exactly 2 parts, got: {v:?}"
-            );
-            // First half must mention the host variant, second half the event variant.
-            assert!(
-                parts[0].contains("Cursor") || parts[0].contains("Aider"),
-                "{host:?}/{event:?} stub first half must name the host variant, got: {parts:?}"
-            );
-            assert!(
-                parts[1].contains("PostToolUse")
-                    || parts[1].contains("UserPromptSubmit")
-                    || parts[1].contains("PreCompact"),
-                "{host:?}/{event:?} stub second half must name the event variant, got: {parts:?}",
-            );
-        }
-    }
-
-    #[test]
-    fn emit_to_supported_branch_does_not_return_stub_shape() {
-        // ponytail: the supported arm must produce the real shim's
-        // shape, not the `{"unsupported": "..."}` stub. A
-        // contributor who accidentally fat-fingers a match arm
-        // into the stub branch surfaces here — the supported
-        // event's real envelope is missing. The shim drift tests
-        // (above) cover the exact field set; this test guards the
-        // *dispatch*.
-        let out = emit_to(
-            Host::ClaudeCode,
-            Event::PostToolUse,
-            json!({
-                "tool_name": "x", "tool_result_key": "k",
-                "content": "hi", "session_id": "s",
-            }),
-        );
-        assert!(
-            out.get("unsupported").is_none(),
-            "supported combination must not return stub shape, got: {out}"
-        );
-    }
-
     // ponytail: pin the canonical `UserPromptSubmitResponse` wire
     // shape on this side of the bridge. The mirror pin on
     // `Intervention` lives in `plugin3-core::budget::tests` — both
@@ -301,16 +108,8 @@ mod tests {
     // The two pins together enforce: drop the serde tag on EITHER
     // enum and one of the two tests fails. Without this pin, a
     // contributor who flips the canonical enum off tagged-enum
-    // form desyncs the Claude Code host shim while the core
-    // pin still passes — runtime breakage with no CI signal. The
-    // dispatch test (`emit_to_routes_user_prompt_submit_…`) covers
-    // Allow's shape via `handle_user_prompt_submit`'s serialisation
-    // but exercises only one variant; the other three (Warn, Slice,
-    // Compact) carry payloads whose field names (`remaining`,
-    // `target_key`, `slice_to`, `reason`) are load-bearing — Claude
-    // Code's envelope parser reads them by name. A rename here
-    // would desync the host shim from the CLI's `Intervention`
-    // serialiser.
+    // form desyncs the CLI's intervention serialiser while the
+    // core pin still passes — runtime breakage with no CI signal.
     #[test]
     fn user_prompt_submit_response_wire_shape_pins_all_four_variants() {
         use crate::canonical::UserPromptSubmitResponse;
@@ -321,7 +120,7 @@ mod tests {
             allow,
             json!({"kind": "allow"}),
             "Allow must serialise as a tagged-enum {{kind: allow}} object — \
-             the Claude Code shim emits Allow on parse-failure (ADR-0009 § \
+             the CLI emits Allow on parse-failure (ADR-0009 § \
              Error contract) and the host envelope parser reads the literal \
              \"kind\": \"allow\" key"
         );
@@ -373,8 +172,7 @@ mod tests {
     // precedence chain (CLAUDE_CODE > CURSOR_TRACE_ID > AIDER >
     // default-to-ClaudeCode) is load-bearing: a contributor who
     // reorders the arms, renames an env var, or changes the
-    // default silently breaks host detection. The dispatcher
-    // tests above cover `emit_to`; this module covers
+    // default silently breaks host detection. This module covers
     // `detect_host` with an `EnvSource` trait seam so tests
     // don't race on `std::env::var` mutation.
     mod detect_host_drift {
@@ -457,10 +255,10 @@ mod tests {
         // ponytail: pin the canonical env-var names. A contributor
         // who renames CLAUDE_CODE → CLAUDE_PROJECT, CURSOR_TRACE_ID
         // → CURSOR_SESSION, or AIDER → AIDER_ACTIVE surfaces here
-        // before the dispatcher's host lookup starts returning
-        // stub envelopes for users running with the canonical
-        // vars. We pin the canonical hits + the near-miss defaults
-        // (which fall through to ClaudeCode, the spec default).
+        // before detection starts returning a wrong default for users
+        // running with the canonical vars. We pin the canonical
+        // hits + the near-miss defaults (which fall through to
+        // ClaudeCode, the spec default).
         #[test]
         fn canonical_env_var_names_are_pinned() {
             // Canonical names: a contributor who renames any of

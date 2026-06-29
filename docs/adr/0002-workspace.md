@@ -133,7 +133,7 @@ without updating the ADR surfaces here.
 |-------|----------------|------------|
 | `plugin3-core` | Pure logic: transforms, budget, store, orchestrator. No I/O outside the OffloadStore. | `SlicingTransform`, `CompactionTransform`, `TokenBudget`, `OffloadStore`, `slice_orchestrator`, `emit_usage` |
 | `plugin3-cli` | clap binary, hook handlers, XDG state, syscalls. | `main()` |
-| `plugin3-hosts` | Per-host output shim — translates the host's `PostToolUse` / `UserPromptSubmit` / `PreCompact` payload shape to the plugin's internal representation. | `emit_to(host, event, payload)` |
+| `plugin3-hosts` | Host detection and canonical payload types. Per-host output shims (`claude_code`, `cursor`, `aider`) are stubs today; the CLI's hook handlers consume the canonical payloads directly (ADR-0013). | `Host`, `detect_host`, `PostToolUsePayload`, `UserPromptSubmitPayload`, `PreCompactPayload` |
 
 ### Independence from Stratum
 

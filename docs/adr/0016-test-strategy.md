@@ -160,9 +160,11 @@ Five drift tests:
    from a vendored copy of Stratum's `make_offload_key`
    reference output.
 
-2. **Shim drift** — every per-host shim in `plugin3-hosts`
-   translates the canonical payload round-trip
-   (host format → canonical → host format) byte-for-byte.
+2. **Canonical payload drift** — the canonical payload and
+   response shapes in `plugin3-hosts` are pinned by inline
+   tests in `plugin3-hosts/src/lib.rs` and by the CLI's
+   `hooks/mod.rs` drift tests. When per-host shims graduate
+   from stubs, the shim drift test will live in the shim module.
 
 3. **Config drift** — the embedded `config.toml` parses to
    a `Plugin3Config` whose `to_string` matches the source
@@ -258,8 +260,8 @@ The test files live alongside the source:
 crates/plugin3-core/src/slicing.rs        # unit tests inline
 crates/plugin3-core/tests/fixtures/        # input/expected pairs (TSV)
 
-crates/plugin3-hosts/src/claude_code.rs    # unit tests inline
-crates/plugin3-hosts/tests/output_shim_spec_drift.rs  # drift test
+crates/plugin3-hosts/src/lib.rs            # Host enum + canonical payload drift tests
+crates/plugin3-hosts/src/claude_code.rs    # stub module (future shim)
 
 crates/plugin3-cli/src/hooks/mod.rs        # all three hook handlers
 crates/plugin3-cli/tests/*_drift.rs        # per-ADR drift tests
