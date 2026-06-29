@@ -121,7 +121,13 @@ impl OffloadStore for FileOffloadStore {
     fn get(&self, key: &str) -> Result<Vec<u8>, StoreError> {
         validate_key(key)?;
         let path = self.dir.join(key);
-        std::fs::read(&path).map_err(|_| StoreError::NotFound(key.to_string()))
+        match std::fs::read(&path) {
+            Ok(bytes) => Ok(bytes),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                Err(StoreError::NotFound(key.to_string()))
+            }
+            Err(e) => Err(StoreError::Backend(format!("read {}: {e}", path.display()))),
+        }
     }
     fn len(&self) -> usize {
         // ponytail: B12 fix — `len` counts *valid 24-hex key files*,

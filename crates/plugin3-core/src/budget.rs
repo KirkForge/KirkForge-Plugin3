@@ -152,7 +152,11 @@ pub fn decide(budget: &TokenBudget, incoming: usize, recent: &[(String, usize)])
     }
     let needed = incoming.saturating_sub(budget.remaining());
     if let Some((key, size)) = recent.iter().max_by_key(|(_, s)| *s) {
-        if *size > needed + SLICE_OVERHEAD {
+        // ponytail: saturating_add so a pathological budget (ceiling=0
+        // or incoming/usize::MAX) doesn't wrap the threshold comparison
+        // in release and panic in debug. Pre-fix, needed + SLICE_OVERHEAD
+        // could overflow, making the Slice branch fire with slice_to=0.
+        if *size > needed.saturating_add(SLICE_OVERHEAD) {
             return Intervention::Slice {
                 target_key: key.clone(),
                 slice_to: size.saturating_sub(needed),
@@ -361,6 +365,24 @@ mod tests {
             panic!("expected Compact, got: {:?}", decide(&b, 30, &recent));
         };
         assert_eq!(reason, "session at 100/100 tokens; cannot fit 30 more");
+    }
+
+    // ponytail: guard against overflow in the `needed + SLICE_OVERHEAD`
+    // threshold. With ceiling=0, any non-zero incoming makes needed
+    // enormous; adding SLICE_OVERHEAD must not wrap back down and make
+    // the Slice branch fire with slice_to=0 (or panic in debug).
+    #[test]
+    fn decide_overflow_guard_yields_compact_not_zero_slice() {
+        let b = TokenBudget {
+            ceiling: 0,
+            approaching_ratio: 0.8,
+            used: 0,
+        };
+        let recent = vec![("big".into(), usize::MAX)];
+        match decide(&b, usize::MAX, &recent) {
+            Intervention::Compact { .. } => {}
+            other => panic!("expected Compact when threshold would overflow, got {other:?}"),
+        }
     }
 
     // ponytail: pin `recent.iter().max_by_key(...)` tie-breaking

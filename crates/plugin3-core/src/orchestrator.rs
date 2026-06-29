@@ -181,7 +181,7 @@ pub fn run(
                 bytes_offloaded, ..
             } => *bytes_offloaded,
         })
-        .sum();
+        .fold(0, |acc, n| acc.saturating_add(n));
     OrchestratorResult {
         decisions,
         total_bytes_saved,
