@@ -465,6 +465,23 @@ mod drift_tests {
     }
 
     #[test]
+    fn print_json_fallbacks_are_host_parseable_json() {
+        // ponytail: B15 hardening — every fallback envelope passed to
+        // print_json must be valid JSON so the host never receives a
+        // parse error when the primary serialisation path fails.
+        for fallback in [
+            r#"{"content":"","note":"plugin3: response serialisation failed"}"#,
+            r#"{"kind":"allow"}"#,
+            r#"{"hint":null,"summary":""}"#,
+        ] {
+            assert!(
+                serde_json::from_str::<serde_json::Value>(fallback).is_ok(),
+                "fallback must be valid JSON: {fallback}"
+            );
+        }
+    }
+
+    #[test]
     fn register_hooks_emits_only_required_slots() {
         // ponytail: a future contributor who adds an `init` slot to
         // HookConfig must update this test. The drift here is the
