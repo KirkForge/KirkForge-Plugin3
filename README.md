@@ -66,7 +66,7 @@ cargo clippy --workspace --all-targets -- -D warnings   # ADR-0016 CI gate
 | Crates    | `plugin3-core`, `plugin3-hosts`, `plugin3-cli`        |
 | Tests     | 481 passing across the workspace                      |
 | Hooks     | PostToolUse, UserPromptSubmit, PreCompact (ADR-0009) |
-| Hosts     | Claude Code only; Cursor/Aider shims deferred (ADR-0013) |
+| Hosts     | Claude Code only; Cursor/Aider/KirkForge stubs (ADR-0013) |
 
 ## License
 
