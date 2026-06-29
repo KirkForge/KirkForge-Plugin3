@@ -178,7 +178,9 @@ fn check_file(
         // ponytail: an empty file is the post-init "no state yet"
         // case (ADR-0014). It parses as nothing — distinct from a
         // partial-write disaster that should fail validation.
-        if !s.trim().is_empty() {
+        if s.trim().is_empty() {
+            detail.push_str("+empty");
+        } else {
             if let Err(e) = parse_existing(path) {
                 return PathCheck {
                     label,
@@ -188,8 +190,6 @@ fn check_file(
                 };
             }
             detail.push_str("+parseable");
-        } else {
-            detail.push_str("+empty");
         }
     }
     PathCheck {
