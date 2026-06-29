@@ -7,7 +7,7 @@
 //! config live in main.rs until a future contributor moves them
 //! into `commands/`.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use plugin3_core::{
@@ -23,6 +23,18 @@ use plugin3_hosts::{
 };
 
 use super::{append_recent, emit_compact_hint, empty_record, open_store, read_stdin_json};
+
+/// Serialise `value` to one line of JSON and print it. If serialisation
+/// somehow fails (it shouldn't for our derive-Serialize shapes), log the
+/// error to stderr and print `fallback` so the host receives a parseable
+/// envelope instead of a panic stack trace.
+fn print_json<T: Serialize>(value: &T, fallback: &str) {
+    let s = serde_json::to_string(value).unwrap_or_else(|e| {
+        eprintln!("plugin3: response serialisation failed: {e}");
+        fallback.to_string()
+    });
+    println!("{}", s);
+}
 
 // ponytail: detect_host is one-time at CLI startup per ADR-0013.
 // `OnceLock` keeps it cheap on the hot path; clap hasn't parsed
@@ -99,7 +111,10 @@ pub(crate) fn post_tool_use() {
             content: String::new(),
             note: Some("plugin3: stdin parse failed; passing through".into()),
         };
-        println!("{}", serde_json::to_string(&resp).unwrap());
+        print_json(
+            &resp,
+            r#"{"content":"","note":"plugin3: response serialisation failed"}"#,
+        );
         return;
     };
     let bytes_in = payload.content.len();
@@ -123,11 +138,34 @@ pub(crate) fn post_tool_use() {
             Some(payload.tool_name.clone()),
         )],
     );
-    let (_key, decision) = result
-        .decisions
-        .into_iter()
-        .next()
-        .expect("orchestrator returns one decision per input");
+    let decision = match result.decisions.into_iter().next() {
+        Some((_, decision)) => decision,
+        None => {
+            // ponytail: this branch should be unreachable today (the
+            // orchestrator returns one decision per input). Treat it as
+            // a pass-through rather than panicking inside the host hook
+            // — a future orchestrator change must not crash Claude
+            // Code's PostToolUse handler.
+            eprintln!("plugin3: orchestrator returned no decision; passing input through");
+            let resp = PostToolUseResponse {
+                content: payload.content.clone(),
+                note: Some("plugin3: no slicing decision produced; passing through".into()),
+            };
+            print_json(
+                &resp,
+                r#"{"content":"","note":"plugin3: response serialisation failed"}"#,
+            );
+            append_recent(
+                &if payload.tool_result_key.is_empty() {
+                    "passthrough".to_string()
+                } else {
+                    payload.tool_result_key.clone()
+                },
+                bytes_in,
+            );
+            return;
+        }
+    };
     // ponytail: the orchestrator's `DetectorCache` already
     // detected the kind for the Slice/Keep decision and now
     // surfaces it on the decision itself (ADR-0007 §
@@ -188,7 +226,10 @@ pub(crate) fn post_tool_use() {
         });
     }
     let resp = PostToolUseResponse { content, note };
-    println!("{}", serde_json::to_string(&resp).unwrap());
+    print_json(
+        &resp,
+        r#"{"content":"","note":"plugin3: response serialisation failed"}"#,
+    );
 }
 
 pub(crate) fn user_prompt_submit() {
@@ -201,7 +242,7 @@ pub(crate) fn user_prompt_submit() {
         // rule on both enums); using the core type here avoids a
         // second hand-written reference that would have to track
         // variant renames.
-        println!("{}", serde_json::to_string(&Intervention::Allow).unwrap());
+        print_json(&Intervention::Allow, r#"{"kind":"allow"}"#);
         return;
     };
     let mut b = super::load_budget();
@@ -243,7 +284,7 @@ pub(crate) fn user_prompt_submit() {
     // updating both enums and the match arms — easy to forget one).
     // serde derives make the rename + tag work in both enums; the
     // conversion goes away.
-    println!("{}", serde_json::to_string(&intervention).unwrap());
+    print_json(&intervention, r#"{"kind":"allow"}"#);
 }
 
 #[derive(Deserialize)]
@@ -264,7 +305,7 @@ pub(crate) fn pre_compact() {
         // ADR-0009: empty hint on parse failure; host proceeds with
         // its own compaction.
         let resp = json!({ "hint": null, "summary": "" });
-        println!("{}", serde_json::to_string(&resp).unwrap());
+        print_json(&resp, r#"{"hint":null,"summary":""}"#);
         return;
     };
     let b = super::load_budget();
@@ -297,7 +338,7 @@ pub(crate) fn pre_compact() {
         "summary": summary_text,
     });
     emit_compact_hint(&b);
-    println!("{}", serde_json::to_string(&resp).unwrap());
+    print_json(&resp, r#"{"hint":null,"summary":""}"#);
 }
 
 #[cfg(test)]

@@ -2037,13 +2037,17 @@ fn append_recent_at(path: &std::path::Path, key: &str, size: usize) {
     // `serde_json::json!` — one wire format owned by `RecentEntry`.
     let mut body = String::new();
     for (k, s) in &entries {
-        body.push_str(
-            &serde_json::to_string(&RecentEntry {
-                key: k.clone(),
-                size: *s,
-            })
-            .unwrap(),
-        );
+        let line = match serde_json::to_string(&RecentEntry {
+            key: k.clone(),
+            size: *s,
+        }) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("plugin3: failed to serialise recent entry: {e}");
+                continue;
+            }
+        };
+        body.push_str(&line);
         body.push('\n');
     }
     atomic_write_text(path, "recent", &body);
