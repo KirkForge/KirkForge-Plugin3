@@ -43,6 +43,9 @@ pub fn aggregate_sessions(lines: &[&str]) -> BTreeMap<String, SessionTotals> {
         t.records += 1;
         match r.kind {
             UsageKind::Slice => {
+                // ponytail: use saturating_sub on both operands so a
+                // malformed record (bytes_out > bytes_in) doesn't wrap
+                // and make bytes_saved negative via usize underflow.
                 t.bytes_saved += r
                     .bytes_in
                     .unwrap_or(0)
@@ -149,9 +152,9 @@ mod tests {
     }
 
     // ponytail: pin the Slice math. bytes_saved = bytes_in - bytes_out
-    // (saturating). A contributor who switches to `unwrap_or(0) -
-    // unwrap_or(0)` (no saturating) breaks here when bytes_out is
-    // absent — underflow would panic in debug builds.
+    // (saturating on both sides). A contributor who switches to
+    // `unwrap_or(0) - unwrap_or(0)` (no saturating) breaks here when
+    // bytes_out > bytes_in — underflow would panic in debug builds.
     #[test]
     fn aggregate_bytes_saved_is_bytes_in_minus_bytes_out_saturating() {
         let lines = [
