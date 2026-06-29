@@ -47,6 +47,13 @@ pub struct CompactedOutput {
 
 pub trait CompactionTransform: Send + Sync {
     fn name(&self) -> &'static str;
+    /// Transform `input` into a compacted form.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TransformError::InvalidInput` for malformed input and
+    /// `TransformError::Internal` for unexpected failures in the
+    /// transform implementation.
     fn apply(&self, input: &str) -> Result<CompactedOutput, TransformError>;
 }
 

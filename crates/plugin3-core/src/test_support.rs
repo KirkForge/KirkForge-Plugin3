@@ -119,18 +119,18 @@ impl Drop for ReentrantMutexGuard<'_> {
 pub struct EnvGuard {
     key: &'static str,
     prior: Option<String>,
-    _lock: ReentrantMutexGuard<'static>,
+    guard: ReentrantMutexGuard<'static>,
 }
 
 impl EnvGuard {
     pub fn set(key: &'static str, value: impl AsRef<OsStr>) -> Self {
-        let _lock = ENV_TEST_MUTEX.lock();
+        let guard = ENV_TEST_MUTEX.lock();
         let prior = std::env::var(key).ok();
         // SAFETY: the process-global env mutex is held, and the caller
         // is running inside a test that bails when the var is already
         // set by the developer's shell.
         unsafe { std::env::set_var(key, value) };
-        Self { key, prior, _lock }
+        Self { key, prior, guard }
     }
 }
 

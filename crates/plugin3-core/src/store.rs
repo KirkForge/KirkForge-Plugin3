@@ -19,7 +19,20 @@ pub enum StoreError {
 }
 
 pub trait OffloadStore: Send + Sync {
+    /// Store `bytes` and return the derived content key.
+    ///
+    /// # Errors
+    ///
+    /// Returns `StoreError::Backend` if the underlying backend cannot
+    /// persist the data (e.g. disk full, permission denied).
     fn put(&self, bytes: &[u8]) -> Result<String, StoreError>;
+    /// Retrieve the payload for `key`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `StoreError::InvalidKey` if `key` is not a 24-hex
+    /// string, or `StoreError::NotFound` if no payload exists for the
+    /// key. Other I/O failures map to `StoreError::Backend`.
     fn get(&self, key: &str) -> Result<Vec<u8>, StoreError>;
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool {
@@ -36,6 +49,12 @@ pub fn make_key(bytes: &[u8]) -> String {
     hex.as_str()[..24].to_string()
 }
 
+/// Validate that `key` is exactly 24 ASCII hex characters.
+///
+/// # Errors
+///
+/// Returns `StoreError::InvalidKey` when the length or character set
+/// does not match the ADR-0004 contract.
 pub fn validate_key(key: &str) -> Result<(), StoreError> {
     if key.len() != 24 || !key.chars().all(|c| c.is_ascii_hexdigit()) {
         return Err(StoreError::InvalidKey(key.to_string()));
@@ -106,6 +125,12 @@ pub struct FileOffloadStore {
 }
 
 impl FileOffloadStore {
+    /// Open (creating if necessary) a file-backed store at `dir`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `StoreError::Backend` if `dir` cannot be created or
+    /// opened (e.g. permission denied).
     pub fn open(dir: impl Into<PathBuf>) -> Result<Self, StoreError> {
         let dir = dir.into();
         std::fs::create_dir_all(&dir)
