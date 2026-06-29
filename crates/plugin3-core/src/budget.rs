@@ -593,9 +593,11 @@ mod tests {
                 approaching_ratio: 0.8,
                 used: *used,
             };
+            #[allow(clippy::cast_precision_loss)]
+            let ratio = *used as f64 / ceiling as f64;
             assert_eq!(b.state(), *expected,
-                "row `{label}`: used={used} ceiling={ceiling} ratio={} expected {expected:?} got {:?}",
-                *used as f64 / ceiling as f64, b.state());
+                "row `{label}`: used={used} ceiling={ceiling} ratio={ratio} expected {expected:?} got {:?}",
+                b.state());
         }
     }
 
