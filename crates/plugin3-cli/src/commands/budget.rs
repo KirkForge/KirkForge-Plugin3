@@ -671,8 +671,8 @@ mod compact_tests {
             "reset must NOT touch ceiling (it's a persisted default); got {}",
             b.ceiling
         );
-        assert_eq!(
-            b.approaching_ratio, 0.7,
+        assert!(
+            (b.approaching_ratio - 0.7).abs() < f64::EPSILON,
             "reset must NOT touch approaching_ratio (also a persisted default); got {}",
             b.approaching_ratio
         );
@@ -697,7 +697,7 @@ mod compact_tests {
         assert_eq!(prior, 0);
         assert_eq!(b.used, 0);
         assert_eq!(b.ceiling, 100_000);
-        assert_eq!(b.approaching_ratio, 0.8);
+        assert!((b.approaching_ratio - 0.8).abs() < f64::EPSILON);
     }
 
     // ponytail: pin the JSON wire shape of `plugin3 budget reset --json`.
@@ -821,8 +821,8 @@ mod compact_tests {
             "reset() must preserve ceiling (persisted default); got {}",
             post.ceiling
         );
-        assert_eq!(
-            post.approaching_ratio, 0.7,
+        assert!(
+            (post.approaching_ratio - 0.7).abs() < f64::EPSILON,
             "reset() must preserve approaching_ratio (persisted default); got {}",
             post.approaching_ratio
         );
