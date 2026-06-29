@@ -56,7 +56,7 @@ pub(crate) fn show(show_sources: bool, as_json: bool) {
                 }),
             );
         }
-        println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+        crate::json_out::print_json(&resp);
         return;
     }
     for (k, v) in &pairs {
@@ -257,7 +257,7 @@ pub(crate) fn validate(as_json: bool) {
             "failures": failures,
             "checks": arr,
         });
-        println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+        crate::json_out::print_json(&resp);
     } else {
         for c in &checks {
             let status = match c.status {

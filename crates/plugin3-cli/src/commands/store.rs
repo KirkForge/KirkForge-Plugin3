@@ -76,7 +76,7 @@ pub(crate) fn prune(as_json: bool) {
                     "slices_dir": slices_dir.display().to_string(),
                     "note": "slices dir absent (fresh install or never sliced)",
                 });
-                println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+                crate::json_out::print_json(&resp);
             } else {
                 println!(
                     "no slices dir at {} (nothing to prune)",
@@ -185,7 +185,7 @@ pub(crate) fn get(marker: &str, as_json: bool) -> i32 {
                     "bytes": bytes.len(),
                     "data": base64_encode(&bytes),
                 });
-                println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+                crate::json_out::print_json(&resp);
             } else {
                 use std::io::Write;
                 let stdout = std::io::stdout();
