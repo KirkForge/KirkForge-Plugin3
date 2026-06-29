@@ -523,8 +523,7 @@ mod tests {
         // who hard-fails on absent files breaks first-run UX.
         assert!(
             checks.iter().all(|c| c.status == CheckStatus::Ok),
-            "every fresh-install check must be Ok; got {:?}",
-            checks
+            "every fresh-install check must be Ok; got {checks:?}"
         );
     }
 
@@ -562,8 +561,7 @@ mod tests {
         assert_eq!(
             config_check.status,
             CheckStatus::Ok,
-            "config_file must Ok; got {:?}",
-            config_check
+            "config_file must Ok; got {config_check:?}"
         );
         assert!(
             config_check.detail.contains("+parseable"),
@@ -601,8 +599,7 @@ mod tests {
             CheckStatus::Fail,
             "unparseable config.toml must FAIL through the full pipeline; \
              a contributor who moves parse-exists out of check_file \
-             silently drops this failure mode; got {:?}",
-            config_check
+             silently drops this failure mode; got {config_check:?}"
         );
     }
 }

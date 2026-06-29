@@ -17,7 +17,7 @@
 //! (ADR-0017 defers concurrent hooks to a future build feature;
 //! today hooks run serially per session so the lock has no race
 //! to guard). Add `with_lock` + tests when concurrent
-//! PostToolUse invocations land.
+//! `PostToolUse` invocations land.
 
 use std::path::PathBuf;
 

@@ -104,7 +104,7 @@ mod tests {
         atomic_write_text(&path, "t", "body");
         let entries: Vec<_> = std::fs::read_dir(dir.path())
             .unwrap()
-            .filter_map(|e| e.ok())
+            .filter_map(std::result::Result::ok)
             .map(|e| e.file_name().to_string_lossy().into_owned())
             .collect();
         assert_eq!(entries, vec!["budget.toml".to_string()]);

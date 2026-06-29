@@ -2,8 +2,8 @@
 //! live in the ADR prose and must stay in lockstep with the
 //! `plugin3-core/src/budget.rs` impl. Companion to the in-file
 //! tests inside `budget.rs` (which pin impl-side behaviour);
-//! this file pins the *spec surface* — the § TokenBudget struct
-//! example, the § UserPromptSubmit hook flow example, the
+//! this file pins the *spec surface* — the § `TokenBudget` struct
+//! example, the § `UserPromptSubmit` hook flow example, the
 //! absence of phantom `tracing` events, and the absence of the
 //! `HookResponse` enum.
 //!
@@ -36,7 +36,7 @@ fn adr_0005() -> String {
     read(&repo_root().join("docs/adr/0005-token-budget.md"))
 }
 
-/// Read ADR-0005's § TokenBudget struct code block.
+/// Read ADR-0005's § `TokenBudget` struct code block.
 fn adr_0005_token_budget_block() -> String {
     let adr = adr_0005();
     let section_start = adr
@@ -57,7 +57,7 @@ fn adr_0005_token_budget_block() -> String {
     fence_after[..fence_end_rel].to_string()
 }
 
-/// Read ADR-0005's § UserPromptSubmit hook flow code block.
+/// Read ADR-0005's § `UserPromptSubmit` hook flow code block.
 fn adr_0005_user_prompt_submit_block() -> String {
     let adr = adr_0005();
     let section_start = adr

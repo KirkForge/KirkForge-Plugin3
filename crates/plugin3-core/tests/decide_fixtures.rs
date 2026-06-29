@@ -12,7 +12,7 @@
 //! `recent` is either `-` (empty list) or `key:bytes,key:bytes`.
 //! `expected` is `allow` / `warn(N)` / `slice(key,N)` / `compact`.
 //!
-//! Boundary coverage: the SLICE_OVERHEAD strict-inequality boundary
+//! Boundary coverage: the `SLICE_OVERHEAD` strict-inequality boundary
 //! (`largest == needed + 256` → Compact; `largest == needed + 257`
 //! → Slice) is exercised twice; the Off-by-one on
 //! `used + incoming <= ceiling` is exercised by `warn(0)` (used at

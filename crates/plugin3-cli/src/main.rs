@@ -2390,7 +2390,8 @@ mod adr_0015_validate_tests {
         let v: serde_json::Value =
             serde_json::from_slice(&out.stdout).expect("stdout is valid JSON");
         let obj = v.as_object().expect("top-level object");
-        let keys: std::collections::BTreeSet<&str> = obj.keys().map(|s| s.as_str()).collect();
+        let keys: std::collections::BTreeSet<&str> =
+            obj.keys().map(std::string::String::as_str).collect();
         assert_eq!(
             keys,
             ["ceiling", "state", "used"].into_iter().collect(),
@@ -2438,7 +2439,8 @@ mod adr_0015_validate_tests {
         let v: serde_json::Value =
             serde_json::from_slice(&out.stdout).expect("stdout is valid JSON");
         let obj = v.as_object().expect("top-level object");
-        let keys: std::collections::BTreeSet<&str> = obj.keys().map(|s| s.as_str()).collect();
+        let keys: std::collections::BTreeSet<&str> =
+            obj.keys().map(std::string::String::as_str).collect();
         assert_eq!(
             keys,
             ["ceiling", "persisted_default"].into_iter().collect(),
@@ -2763,7 +2765,8 @@ mod adr_0015_validate_tests {
         let v: serde_json::Value =
             serde_json::from_slice(&out.stdout).expect("stdout is valid JSON");
         let obj = v.as_object().expect("top-level object");
-        let top_keys: std::collections::BTreeSet<&str> = obj.keys().map(|s| s.as_str()).collect();
+        let top_keys: std::collections::BTreeSet<&str> =
+            obj.keys().map(std::string::String::as_str).collect();
         assert_eq!(
             top_keys,
             ["checks", "failures", "ok"].into_iter().collect(),
@@ -2799,7 +2802,8 @@ mod adr_0015_validate_tests {
             let cobj = c
                 .as_object()
                 .unwrap_or_else(|| panic!("check[{i}] must be an object, got: {c}"));
-            let keys: std::collections::BTreeSet<&str> = cobj.keys().map(|s| s.as_str()).collect();
+            let keys: std::collections::BTreeSet<&str> =
+                cobj.keys().map(std::string::String::as_str).collect();
             assert_eq!(
                 keys, expected_keys,
                 "check[{i}] field set drifted from ADR-0015; got: {keys:?}"
@@ -3182,8 +3186,7 @@ mod adr_0015_validate_tests {
             assert!(
                 line.starts_with("OK    "),
                 "line[{i}] must lead with `OK    ` (status `OK  ` \
-                 + 2-space gap to the label); got: {:?}",
-                line
+                 + 2-space gap to the label); got: {line:?}"
             );
             // ponytail: the label must appear at column 6 with
             // 22-char padding. The substring `{label:<22}` is
@@ -3196,8 +3199,7 @@ mod adr_0015_validate_tests {
             assert!(
                 after_status.starts_with(&format!("{label:<22}")),
                 "line[{i}] after the status prefix must lead with \
-                 `{label:<22}` (22-char pad); got: {:?}",
-                line
+                 `{label:<22}` (22-char pad); got: {line:?}"
             );
         }
 
@@ -7418,7 +7420,7 @@ mod recent_outputs_tests {
             .expect("recent_outputs.jsonl readable")
             .lines()
             .filter(|l| !l.is_empty())
-            .map(|l| l.to_string())
+            .map(std::string::ToString::to_string)
             .collect()
     }
 
@@ -7450,8 +7452,8 @@ mod recent_outputs_tests {
         let v: serde_json::Value = serde_json::from_str(&lines[0])
             .unwrap_or_else(|e| panic!("line not valid JSON: {lines:?}: {e}"));
         let obj = v.as_object().expect("object");
-        let mut keys: Vec<&str> = obj.keys().map(|s| s.as_str()).collect();
-        keys.sort();
+        let mut keys: Vec<&str> = obj.keys().map(std::string::String::as_str).collect();
+        keys.sort_unstable();
         assert_eq!(keys, vec!["key", "size"], "field set drifted");
         assert_eq!(obj["key"], "abc123");
         assert_eq!(obj["size"], 4242);

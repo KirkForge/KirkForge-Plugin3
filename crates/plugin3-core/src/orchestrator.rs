@@ -565,8 +565,7 @@ mod tests {
         assert_eq!(
             o.detector.len(),
             ASSUMED_CAP,
-            "cache must be at assumed cap ({} entries) before the eviction call",
-            ASSUMED_CAP
+            "cache must be at assumed cap ({ASSUMED_CAP} entries) before the eviction call"
         );
         // ASSUMED_CAP+1 = 65th distinct call triggers clear+insert.
         let _ = o.detector.get_or_detect(Some("tool_64"), &body);

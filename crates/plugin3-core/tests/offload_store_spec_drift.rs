@@ -1,15 +1,15 @@
-//! ADR-0004 (OffloadStore) drift tests — the contracts that
+//! ADR-0004 (`OffloadStore`) drift tests — the contracts that
 //! live in the ADR prose and must stay in lockstep with the
 //! `plugin3-core/src/store.rs` impl. Companion to
 //! `store_drift.rs` (which pins the key-format wire contract);
 //! this file pins the *spec surface* — backends count, file
-//! path, mutex choice, and the absence of phantom SQLite /
-//! parking_lot claims.
+//! path, mutex choice, and the absence of phantom `SQLite` /
+//! `parking_lot` claims.
 //!
 //! ponytail: literal-substring scan per contract, no markdown
 //! parser. The ADR owns the exact strings; `contains` catches
 //! the silent regressions (a contributor who copy-pastes the
-//! SQLite backend example back into the ADR documents a
+//! `SQLite` backend example back into the ADR documents a
 //! dependency the impl does not wire, and the resulting
 //! `cargo build` breakage lands on a fresh checkout, not on
 //! incremental — invisible until CI runs).
@@ -33,7 +33,7 @@ fn read(path: &Path) -> String {
 /// `rust` block in § Backends, scoped to the in-memory +
 /// file backends). Excludes the explanatory paragraph above
 /// the block so the prose can mention deprecated backends
-/// (e.g. "SQLite was removed when ...") without tripping the
+/// (e.g. "`SQLite` was removed when ...") without tripping the
 /// drift test.
 fn adr_0004_backends_block() -> String {
     let adr = read(&repo_root().join("docs/adr/0004-offload-store.md"));
