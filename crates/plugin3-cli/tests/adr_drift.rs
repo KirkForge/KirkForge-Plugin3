@@ -27,7 +27,10 @@ fn real_adrs() -> BTreeSet<String> {
     for entry in std::fs::read_dir(adr_dir()).expect("docs/adr/ readable") {
         let entry = entry.expect("dir entry");
         let name = entry.file_name().to_string_lossy().into_owned();
-        if name.ends_with(".md") {
+        if std::path::Path::new(&name)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+        {
             out.insert(name);
         }
     }
@@ -75,7 +78,9 @@ fn looks_like_adr_filename(s: &str) -> bool {
     };
     head.len() == 4
         && head.chars().all(|c| c.is_ascii_digit())
-        && tail.ends_with(".md")
+        && std::path::Path::new(tail)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
         && !tail.contains('/')
 }
 

@@ -127,7 +127,7 @@ fn readme_test_count_matches_test_attributes() {
     // was too generous — contributors could land 4 of every 5
     // commits without bumping the README and the drift would
     // accumulate silently.
-    let drift = (claimed as isize - actual as isize).abs();
+    let drift = claimed.abs_diff(actual);
     assert!(
         drift <= 2,
         "README says {claimed} passing tests but #[test] count under crates/ is {actual} (drift {drift}) — \
