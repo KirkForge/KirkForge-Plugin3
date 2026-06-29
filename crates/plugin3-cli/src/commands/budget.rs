@@ -21,7 +21,7 @@ pub(crate) fn status(as_json: bool) {
             "ceiling": b.ceiling,
             "state": b.state(),
         });
-        println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+        crate::json_out::print_json(&resp);
     } else {
         println!("used: {} / {} ({:?})", b.used, b.ceiling, b.state());
     }
@@ -46,7 +46,7 @@ pub(crate) fn set(ceiling: usize, persist_default: bool, as_json: bool) {
             "ceiling": b.ceiling,
             "persisted_default": persist_default,
         });
-        println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+        crate::json_out::print_json(&resp);
     } else {
         println!("ceiling set to {ceiling}");
         if persist_default {
@@ -77,7 +77,7 @@ pub(crate) fn reset(as_json: bool) {
             "used": b.used,
             "ceiling": b.ceiling,
         });
-        println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+        crate::json_out::print_json(&resp);
     } else {
         println!(
             "budget.used reset (was {prior}, now 0); \
@@ -114,7 +114,7 @@ pub(crate) fn compact(as_json: bool) {
     emit_compact_hint(&b);
     if as_json {
         let resp = serde_json::json!({ "hint": hint });
-        println!("{}", serde_json::to_string_pretty(&resp).unwrap());
+        crate::json_out::print_json(&resp);
     } else {
         println!("reason:       {}", hint.reason);
         println!("tokens_used: {}", hint.tokens_used);
